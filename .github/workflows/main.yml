@@ -1,0 +1,15 @@
+name: main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  invoke-sonarqube:
+    name: Run SonarQube Analysis
+    uses: ./.github/workflows/SonarQube.yml
+    with:
+      sonar_project_key: "PeiJeSsu_feelink_backend"
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
