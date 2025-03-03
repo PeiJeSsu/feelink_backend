@@ -7,7 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 class FeelinkBackendApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
+    void mainRuns(){FeelinkBackendApplication.main(new String[] {});}
 
 }
