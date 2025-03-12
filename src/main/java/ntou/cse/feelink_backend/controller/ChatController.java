@@ -1,9 +1,9 @@
-package com.example.chatapp.controller;
+package ntou.cse.feelink_backend.controller;
 
-import com.example.chatapp.model.ApiResponse;
-import com.example.chatapp.model.ChatMessage;
-import com.example.chatapp.service.ChatService;
-import com.example.chatapp.service.ApiService;
+import ntou.cse.feelink_backend.model.ApiResponse;
+import ntou.cse.feelink_backend.model.ChatMessage;
+import ntou.cse.feelink_backend.service.ChatService;
+import ntou.cse.feelink_backend.service.ApiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

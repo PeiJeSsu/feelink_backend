@@ -1,7 +1,7 @@
-package com.example.chatapp.service;
+package ntou.cse.feelink_backend.service;
 
-import com.example.chatapp.model.ApiResponse;
-import com.example.chatapp.model.ChatMessage;
+import ntou.cse.feelink_backend.model.ApiResponse;
+import ntou.cse.feelink_backend.model.ChatMessage;
 
 public interface ApiService {
     ApiResponse callExternalApi(String message, String sessionId);

@@ -1,6 +1,6 @@
-package com.example.chatapp.service;
+package ntou.cse.feelink_backend.service;
 
-import com.example.chatapp.model.ChatMessage;
+import ntou.cse.feelink_backend.model.ChatMessage;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

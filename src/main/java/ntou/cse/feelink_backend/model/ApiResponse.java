@@ -1,4 +1,4 @@
-package com.example.chatapp.model;
+package ntou.cse.feelink_backend.model;
 
 public class ApiResponse {
     private String message;

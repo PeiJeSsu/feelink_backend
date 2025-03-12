@@ -1,7 +1,7 @@
-package com.example.chatapp.service;
+package ntou.cse.feelink_backend.service;
 
-import com.example.chatapp.model.ApiResponse;
-import com.example.chatapp.model.ChatMessage;
+import ntou.cse.feelink_backend.model.ApiResponse;
+import ntou.cse.feelink_backend.model.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
