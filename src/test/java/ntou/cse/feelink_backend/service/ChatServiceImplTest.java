@@ -128,5 +128,4 @@ class ChatServiceImplTest {
             contentMakerMock.verify(() -> ContentMaker.fromMultiModalData(dummyImage, processedText), times(1));
         }
     }
-
 }

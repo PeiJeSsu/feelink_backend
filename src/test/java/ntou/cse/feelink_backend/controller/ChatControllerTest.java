@@ -22,7 +22,6 @@ class ChatControllerStandaloneTest {
     @Mock
     private ChatService chatService;
 
-    // 直接建立 Controller，並用 @InjectMocks 或建構子注入
     @InjectMocks
     private ChatController chatController;
 
@@ -30,21 +29,17 @@ class ChatControllerStandaloneTest {
 
     @BeforeEach
     void setup() {
-        // Stand-alone 模式：不使用 @WebMvcTest，自行建構 MockMvc
         mockMvc = MockMvcBuilders.standaloneSetup(chatController).build();
     }
 
     @Test
     void testChatWithFileAndText() throws Exception {
-        // 模擬 Service 回傳
         when(chatService.processChat(any(), anyString())).thenReturn("Mock AI response");
 
-        // 建立模擬檔案
         MockMultipartFile file = new MockMultipartFile(
                 "file", "test.png", "image/png", "fake image".getBytes()
         );
 
-        // 執行測試
         mockMvc.perform(multipart("/chat")
                         .file(file)
                         .param("userMessage", "Hello Image")
