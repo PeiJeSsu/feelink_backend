@@ -1,13 +1,21 @@
 package ntou.cse.feelink_backend.service;
 
+
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import ntou.cse.feelink_backend.model.ChatMessage;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
-public class ChatServiceImpl implements ChatService{
+public class ChatServiceImpl implements ChatService {
     private final ChatSession chatSession;
     private final ImageProcessor imageProcessor;
     private final TextProcessor textProcessor;
@@ -17,7 +25,21 @@ public class ChatServiceImpl implements ChatService{
         this.imageProcessor = imageProcessor;
         this.textProcessor = textProcessor;
     }
+  
+    // 記憶體儲存（可以替換成數據庫儲存庫）
+    private final Map<String, List<ChatMessage>> chatHistory = new HashMap<>();
 
+    @Override
+    public ChatMessage saveMessage(ChatMessage message) {
+        String sessionId = message.getSessionId();
+        chatHistory.computeIfAbsent(sessionId, k -> new ArrayList<>()).add(message);
+        return message;
+    }
+
+    @Override
+    public List<ChatMessage> getMessagesBySessionId(String sessionId) {
+        return chatHistory.getOrDefault(sessionId, new ArrayList<>());
+    }
     @Override
     public String processChat(MultipartFile file, String userMessage) throws IOException {
         GenerateContentResponse response;
