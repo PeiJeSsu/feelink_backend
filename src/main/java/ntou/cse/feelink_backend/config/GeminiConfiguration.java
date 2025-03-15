@@ -12,7 +12,7 @@ import java.io.IOException;
 public class GeminiConfiguration {
 
     @Bean
-    public VertexAI vertexAI() throws IOException {
+    public VertexAI vertexAI() {
         return new VertexAI("graduate-project-450802","asia-southeast1");
     }
 
