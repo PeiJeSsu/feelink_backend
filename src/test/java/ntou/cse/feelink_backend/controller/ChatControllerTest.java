@@ -40,7 +40,7 @@ class ChatControllerStandaloneTest {
                 "file", "test.png", "image/png", "fake image".getBytes()
         );
 
-        mockMvc.perform(multipart("/chat")
+        mockMvc.perform(multipart("/api/chat")
                         .file(file)
                         .param("userMessage", "Hello Image")
                 )
@@ -52,7 +52,7 @@ class ChatControllerStandaloneTest {
     void testChatTextOnly() throws Exception {
         when(chatService.processChat(null, "Only Text")).thenReturn("Mock AI response");
 
-        mockMvc.perform(multipart("/chat")
+        mockMvc.perform(multipart("/api/chat")
                         .param("userMessage", "Only Text")
                 )
                 .andExpect(status().isOk())
