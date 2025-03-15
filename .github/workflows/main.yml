@@ -13,9 +13,6 @@ jobs:
       sonar_project_key: "PeiJeSsu_feelink_backend"
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  invoke-coverage:
-    name: Run Coverage
-    uses: ./.github/workflows/Coverage.yml
   invoke-unittest:
     name: Run UnitTest
     uses: ./.github/workflows/UnitTest.yml
