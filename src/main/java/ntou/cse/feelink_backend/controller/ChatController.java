@@ -1,13 +1,14 @@
 package ntou.cse.feelink_backend.controller;
 
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import ntou.cse.feelink_backend.service.ChatService;
 import ntou.cse.feelink_backend.model.AiResponse;
 import ntou.cse.feelink_backend.model.ChatMessage;
-import ntou.cse.feelink_backend.service.ChatService;
 import ntou.cse.feelink_backend.service.AiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -38,7 +39,13 @@ public class ChatController {
         //這裡要處理成單純傳送要回傳的訊息
         return ResponseEntity.ok(savedMessage);
     }
-
+  
+    @PostMapping
+    public String chat(
+            @RequestParam(value = "file", required = false) MultipartFile file, @RequestParam("userMessage") String userMessage) throws IOException {
+        return chatService.processChat(file, userMessage);
+    }
+  
     // 獲取聊天歷史
     @GetMapping("/history/{sessionId}")
     public ResponseEntity<List<ChatMessage>> getChatHistory(@PathVariable String sessionId) {
