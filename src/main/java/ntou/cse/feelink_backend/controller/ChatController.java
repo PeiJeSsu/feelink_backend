@@ -1,9 +1,9 @@
 package ntou.cse.feelink_backend.controller;
 
-import ntou.cse.feelink_backend.model.ApiResponse;
+import ntou.cse.feelink_backend.model.AiResponse;
 import ntou.cse.feelink_backend.model.ChatMessage;
 import ntou.cse.feelink_backend.service.ChatService;
-import ntou.cse.feelink_backend.service.ApiService;
+import ntou.cse.feelink_backend.service.AiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +16,12 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
-    private final ApiService apiService;
+    private final AiService aiService;
 
     @Autowired
-    public ChatController(ChatService chatService, ApiService apiService) {
+    public ChatController(ChatService chatService, AiService aiService) {
         this.chatService = chatService;
-        this.apiService = apiService;
+        this.aiService = aiService;
     }
 
     // 發送使用者訊息
@@ -32,7 +32,7 @@ public class ChatController {
 
         // 呼叫外部API
         if (message.isUser()) {
-            apiService.callExternalApi(message.getContent(), message.getSessionId());
+            aiService.callExternalApi(message.getContent(), message.getSessionId());
         }
         savedMessage.setContent("測試用 " + savedMessage.getContent() + " [時間: " + System.currentTimeMillis() + "]");
         //這裡要處理成單純傳送要回傳的訊息
@@ -48,9 +48,9 @@ public class ChatController {
 
     // 直接呼叫API並返回回應
     @PostMapping("/api-message")
-    public ResponseEntity<ApiResponse> sendApiMessage(@RequestParam String message,
+    public ResponseEntity<AiResponse> sendApiMessage(@RequestParam String message,
                                                       @RequestParam String sessionId) {
-        ApiResponse response = apiService.callExternalApi(message, sessionId);
+        AiResponse response = aiService.callExternalApi(message, sessionId);
         //這裡要接分析的訊息
         return ResponseEntity.ok(response);
     }

@@ -1,13 +1,13 @@
 package ntou.cse.feelink_backend.model;
 
-public class ApiResponse {
+public class AiResponse {
     private String message;
     private boolean success;
 
-    public ApiResponse() {
+    public AiResponse() {
     }
 
-    public ApiResponse(String message, boolean success) {
+    public AiResponse(String message, boolean success) {
         this.message = message;
         this.success = success;
     }

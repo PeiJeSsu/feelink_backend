@@ -1,13 +1,13 @@
 package ntou.cse.feelink_backend.service;
 
-import ntou.cse.feelink_backend.model.ApiResponse;
+import ntou.cse.feelink_backend.model.AiResponse;
 import ntou.cse.feelink_backend.model.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class ApiServiceImpl implements ApiService {
+public class ApiServiceImpl implements AiService {
 
     private final RestTemplate restTemplate;
     private final ChatService chatService;
@@ -20,13 +20,13 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public ApiResponse callExternalApi(String message, String sessionId) {
+    public AiResponse callExternalApi(String message, String sessionId) {
         try {
             // 要接API的部分
             // ApiResponse response = restTemplate.postForObject(apiUrl, message, ApiResponse.class);
 
             // 模擬API回應
-            ApiResponse response = new ApiResponse("API回應: " + message, true);
+            AiResponse response = new AiResponse("API回應: " + message, true);
 
             // 處理回應
             if (response.isSuccess()) {
@@ -39,7 +39,7 @@ public class ApiServiceImpl implements ApiService {
 
             return response;
         } catch (Exception e) {
-            return new ApiResponse("呼叫API錯誤: " + e.getMessage(), false);
+            return new AiResponse("呼叫API錯誤: " + e.getMessage(), false);
         }
     }
 }
