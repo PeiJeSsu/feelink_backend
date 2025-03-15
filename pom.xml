@@ -31,6 +31,7 @@
     <java.version>17</java.version>
       <sonar.organization>ntou-cse-115</sonar.organization>
       <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+      <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
   <dependencies>
     <dependency>
