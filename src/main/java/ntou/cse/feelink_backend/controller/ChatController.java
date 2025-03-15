@@ -6,11 +6,9 @@ import java.io.IOException;
 import ntou.cse.feelink_backend.service.ChatService;
 import ntou.cse.feelink_backend.model.AiResponse;
 import ntou.cse.feelink_backend.model.ChatMessage;
-import ntou.cse.feelink_backend.service.ChatService;
 import ntou.cse.feelink_backend.service.AiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
