@@ -40,10 +40,11 @@ class ChatControllerStandaloneTest {
                 "file", "test.png", "image/png", "fake image".getBytes()
         );
 
-        mockMvc.perform(multipart("/api/chat")
+        mockMvc.perform(multipart("/chat")
                         .file(file)
                         .param("userMessage", "Hello Image")
-                )
+                        .param("sessionId", "testSession")
+                        .with(request -> { request.setMethod("POST"); return request; })) // 確保是 POST
                 .andExpect(status().isOk())
                 .andExpect(content().string("Mock AI response"));
     }
@@ -52,10 +53,12 @@ class ChatControllerStandaloneTest {
     void testChatTextOnly() throws Exception {
         when(chatService.processChat(null, "Only Text")).thenReturn("Mock AI response");
 
-        mockMvc.perform(multipart("/api/chat")
+        mockMvc.perform(multipart("/chat") 
                         .param("userMessage", "Only Text")
-                )
+                        .param("sessionId", "testSession")
+                        .with(request -> { request.setMethod("POST"); return request; })) // 確保是 POST
                 .andExpect(status().isOk())
                 .andExpect(content().string("Mock AI response"));
     }
+
 }
