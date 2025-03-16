@@ -44,5 +44,5 @@ public class ChatController {
         return ResponseEntity.ok(aiMsg);
     }
 
-    
+
 }
