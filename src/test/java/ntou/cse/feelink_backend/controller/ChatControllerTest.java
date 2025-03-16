@@ -1,4 +1,5 @@
 package ntou.cse.feelink_backend.controller;
+
 import ntou.cse.feelink_backend.service.ChatService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,9 @@ class ChatControllerStandaloneTest {
                         .param("sessionId", "testSession")
                         .with(request -> { request.setMethod("POST"); return request; })) // 確保是 POST
                 .andExpect(status().isOk())
-                .andExpect(content().string("Mock AI response"));
+                .andExpect(jsonPath("$.content").value("Mock AI response")) // 確保回傳 JSON 格式
+                .andExpect(jsonPath("$.sessionId").value("testSession"))
+                .andExpect(jsonPath("$.user").value(false));
     }
 
     @Test
