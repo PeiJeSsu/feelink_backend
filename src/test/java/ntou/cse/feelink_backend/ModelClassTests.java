@@ -30,25 +30,4 @@ public class ModelClassTests {
         assertNull(message2.getContent());
         assertNull(message2.getSessionId());
     }
-
-    @Test
-    public void testAiResponse() {
-        // Test constructor
-        AiResponse response1 = new AiResponse("Test response", true);
-        assertEquals("Test response", response1.getMessage());
-        assertTrue(response1.isSuccess());
-
-        // Test setters
-        response1.setMessage("Updated response");
-        response1.setSuccess(false);
-
-        // Test getters
-        assertEquals("Updated response", response1.getMessage());
-        assertFalse(response1.isSuccess());
-
-        // Test default constructor
-        AiResponse response2 = new AiResponse();
-        assertNull(response2.getMessage());
-        assertFalse(response2.isSuccess());
-    }
 }

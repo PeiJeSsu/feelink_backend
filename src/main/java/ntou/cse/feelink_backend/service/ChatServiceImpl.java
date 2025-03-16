@@ -38,20 +38,31 @@ public class ChatServiceImpl implements ChatService {
     public List<ChatMessage> getMessagesBySessionId(String sessionId) {
         return chatHistory.getOrDefault(sessionId, new ArrayList<>());
     }
+
     @Override
     public String processChat(MultipartFile file, String userMessage) throws IOException {
         GenerateContentResponse response;
 
         String processedText = textProcessor.processText(userMessage);
-        Object processedImage = imageProcessor.processImage(file);
+        Object processedImage = null;
 
-        if (processedImage != null) {
-            response = chatSession.sendMessage(
-                    ContentMaker.fromMultiModalData(processedImage, processedText)
-            );
-        } else {
-            response = chatSession.sendMessage(processedText);
+        if (file != null && !file.isEmpty()) {
+            processedImage = imageProcessor.processImage(file);
         }
-        return ResponseHandler.getText(response);
+
+        try {
+            if (processedImage != null) {
+                // 處理圖片和文字
+                response = chatSession.sendMessage(
+                        ContentMaker.fromMultiModalData(processedImage, processedText)
+                );
+            } else {
+                // 只處理文字
+                response = chatSession.sendMessage(processedText);
+            }
+            return ResponseHandler.getText(response);
+        } catch (Exception e) {
+            return "AI處理錯誤: " + e.getMessage();
+        }
     }
 }

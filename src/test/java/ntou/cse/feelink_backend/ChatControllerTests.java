@@ -1,9 +1,7 @@
 package ntou.cse.feelink_backend.controller;
 
-import ntou.cse.feelink_backend.model.AiResponse;
 import ntou.cse.feelink_backend.model.ChatMessage;
 import ntou.cse.feelink_backend.service.ChatService;
-import ntou.cse.feelink_backend.service.AiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -42,7 +40,6 @@ public class ChatControllerTests {
         savedMessage.setId(1L);
 
         when(chatService.saveMessage(any(ChatMessage.class))).thenReturn(savedMessage);
-        when(aiService.callExternalApi(anyString(), anyString())).thenReturn(new AiResponse("Response", true));
 
         // Act
         ResponseEntity<ChatMessage> response = chatController.sendMessage(inputMessage);
@@ -73,24 +70,6 @@ public class ChatControllerTests {
         assertEquals(2, response.getBody().size());
         verify(chatService, times(1)).getMessagesBySessionId("session123");
     }
-
-    @Test
-    public void testSendApiMessage() {
-        // Arrange
-        AiResponse apiResponse = new AiResponse("API response", true);
-        when(aiService.callExternalApi("Hello API", "session123")).thenReturn(apiResponse);
-
-        // Act
-        ResponseEntity<AiResponse> response = chatController.sendApiMessage("Hello API", "session123");
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals("API response", response.getBody().getMessage());
-        assertTrue(response.getBody().isSuccess());
-        verify(aiService, times(1)).callExternalApi("Hello API", "session123");
-    }
-
     @Test
     public void testGetLatestResponse_WithResponse() {
         // Arrange
