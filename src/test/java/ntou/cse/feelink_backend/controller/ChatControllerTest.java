@@ -53,12 +53,14 @@ class ChatControllerStandaloneTest {
     void testChatTextOnly() throws Exception {
         when(chatService.processChat(null, "Only Text")).thenReturn("Mock AI response");
 
-        mockMvc.perform(multipart("/chat") 
+        mockMvc.perform(multipart("/chat")
                         .param("userMessage", "Only Text")
                         .param("sessionId", "testSession")
-                        .with(request -> { request.setMethod("POST"); return request; })) // 確保是 POST
+                        .with(request -> { request.setMethod("POST"); return request; }))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Mock AI response"));
+                .andExpect(jsonPath("$.content").value("Mock AI response"))
+                .andExpect(jsonPath("$.sessionId").value("testSession"))
+                .andExpect(jsonPath("$.user").value(false));
     }
 
 }
