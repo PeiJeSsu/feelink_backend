@@ -101,6 +101,7 @@ class ChatServiceImplTest {
             contentMakerMock.verify(() -> ContentMaker.fromMultiModalData(dummyImage, processedText), times(1));
         }
     }
+
     @Test
     void testProcessChat_WithImageAndText() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
@@ -127,5 +128,75 @@ class ChatServiceImplTest {
             verify(imageProcessor, times(1)).processImage(file);
             contentMakerMock.verify(() -> ContentMaker.fromMultiModalData(dummyImage, processedText), times(1));
         }
+    }
+
+    @Test
+    void testProcessChat_WithEmptyMessage() throws IOException {
+        MultipartFile file = null;
+        String userMessage = "";
+
+        
+        String response = chatService.processChat(file, userMessage);
+
+        assertNotNull(response);
+        assertEquals("AI處理錯誤: 空訊息", response);
+        verify(textProcessor, times(0)).processText(userMessage);
+        verify(imageProcessor, times(0)).processImage(file);
+    }
+
+    @Test
+    void testProcessChat_WithTextOnly_NoImage() throws IOException {
+        MultipartFile file = null;  // 沒有圖片
+        String userMessage = "只處理文字訊息";
+
+        when(textProcessor.processText(userMessage)).thenReturn("Processed Text");
+
+        String response = chatService.processChat(file, userMessage);
+
+        assertNotNull(response);
+        assertEquals("Mock AI 回應", response);
+        verify(textProcessor, times(1)).processText(userMessage);
+        verify(imageProcessor, times(0)).processImage(file);
+    }
+
+    @Test
+    void testProcessChat_WithImageOnly_NoText() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        String userMessage = "";    // 沒有文字訊息
+
+        Part dummyImage = mock(Part.class);
+        when(imageProcessor.processImage(file)).thenReturn(dummyImage);
+        String processedText = "請分析這張圖片";
+        when(textProcessor.processText(userMessage)).thenReturn(processedText);
+
+        Content dummyContent = mock(Content.class);
+        try (MockedStatic<ContentMaker> contentMakerMock = Mockito.mockStatic(ContentMaker.class)) {
+            contentMakerMock.when(() -> ContentMaker.fromMultiModalData(dummyImage, processedText))
+                    .thenReturn(dummyContent);
+            when(chatSession.sendMessage(dummyContent)).thenReturn(mockResponse);
+
+            String response = chatService.processChat(file, userMessage);
+
+            assertNotNull(response);
+            assertEquals("Mock AI 回應", response);
+            verify(textProcessor, times(1)).processText(userMessage);
+            verify(imageProcessor, times(1)).processImage(file);
+            contentMakerMock.verify(() -> ContentMaker.fromMultiModalData(dummyImage, processedText), times(1));
+        }
+    }
+
+    @Test
+    void testProcessChat_WithErrorHandling() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        String userMessage = "處理時出錯的訊息";
+
+        when(textProcessor.processText(userMessage)).thenThrow(new IOException("文字處理錯誤"));
+
+        String response = chatService.processChat(file, userMessage);
+
+        assertNotNull(response);
+        assertEquals("AI處理錯誤: 文字處理錯誤", response);
+        verify(textProcessor, times(1)).processText(userMessage);
+        verify(imageProcessor, times(0)).processImage(file);
     }
 }
