@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.model;
+package ntou.cse.feelink_backend.ChatRoom.Model;
 
 public class ChatMessage {
     private Long id;
@@ -6,14 +6,7 @@ public class ChatMessage {
     private boolean isUser;
     private String sessionId;
 
-    public ChatMessage() {
-    }
-
-    public ChatMessage(String content, boolean isUser, String sessionId) {
-        this.content = content;
-        this.isUser = isUser;
-        this.sessionId = sessionId;
-    }
+    public ChatMessage() {}
 
     public Long getId() {
         return id;
