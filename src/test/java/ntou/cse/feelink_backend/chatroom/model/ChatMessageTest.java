@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.ChatRoom.Model;
+package ntou.cse.feelink_backend.chatroom.model;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,7 +1,7 @@
-package ntou.cse.feelink_backend.ChatRoom.Controller;
+package ntou.cse.feelink_backend.chatroom.controller;
 
-import ntou.cse.feelink_backend.ChatRoom.Service.ChatService;
-import ntou.cse.feelink_backend.ChatRoom.Model.ChatMessage;
+import ntou.cse.feelink_backend.chatroom.service.ChatService;
+import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;

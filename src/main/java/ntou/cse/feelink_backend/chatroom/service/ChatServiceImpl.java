@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.ChatRoom.Service;
+package ntou.cse.feelink_backend.chatroom.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,5 @@
-package ntou.cse.feelink_backend.ChatRoom.Service;
+package ntou.cse.feelink_backend.chatroom.service;
 
-import ntou.cse.feelink_backend.ChatRoom.Model.ChatMessage;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 

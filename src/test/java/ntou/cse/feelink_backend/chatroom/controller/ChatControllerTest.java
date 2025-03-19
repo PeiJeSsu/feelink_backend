@@ -1,7 +1,6 @@
-package ntou.cse.feelink_backend.ChatRoom.Controller;
+package ntou.cse.feelink_backend.chatroom.controller;
 
-import ntou.cse.feelink_backend.ChatRoom.Service.ChatService;
-import org.junit.jupiter.api.Disabled;
+import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
