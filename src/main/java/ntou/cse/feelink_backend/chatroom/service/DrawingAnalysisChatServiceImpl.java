@@ -9,12 +9,12 @@ import com.google.cloud.vertexai.generativeai.*;
 import java.io.IOException;
 
 @Service
-public class ChatServiceImpl implements ChatService {
-    private final ChatSession chatSession;
+public class DrawingAnalysisChatServiceImpl implements ChatService {
+    private final ChatSession drawingAnalysisChatSession;
 
     @Autowired
-    public ChatServiceImpl(ChatSession chatSession) {
-        this.chatSession = chatSession;
+    public DrawingAnalysisChatServiceImpl(ChatSession drawingAnalysisChatSession) {
+        this.drawingAnalysisChatSession = drawingAnalysisChatSession;
     }
 
     @Override
@@ -26,11 +26,11 @@ public class ChatServiceImpl implements ChatService {
 
         try {
             if (processedImage != null) {
-                response = chatSession.sendMessage(
+                response = drawingAnalysisChatSession.sendMessage(
                         ContentMaker.fromMultiModalData(processedImage, processedText)
                 );
             } else {
-                response = chatSession.sendMessage(processedText);
+                response = drawingAnalysisChatSession.sendMessage(processedText);
             }
             return ResponseHandler.getText(response);
         } catch (Exception e) {
