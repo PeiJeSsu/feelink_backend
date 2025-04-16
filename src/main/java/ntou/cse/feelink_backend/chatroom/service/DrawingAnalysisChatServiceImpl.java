@@ -9,7 +9,7 @@ import com.google.cloud.vertexai.generativeai.*;
 import java.io.IOException;
 
 @Service
-public class DrawingAnalysisChatServiceImpl implements ChatService {
+public class DrawingAnalysisChatServiceImpl {
     private final ChatSession drawingAnalysisChatSession;
 
     @Autowired
@@ -17,7 +17,6 @@ public class DrawingAnalysisChatServiceImpl implements ChatService {
         this.drawingAnalysisChatSession = drawingAnalysisChatSession;
     }
 
-    @Override
     public String processChat(MultipartFile file, String userMessage) throws IOException {
         GenerateContentResponse response;
 
