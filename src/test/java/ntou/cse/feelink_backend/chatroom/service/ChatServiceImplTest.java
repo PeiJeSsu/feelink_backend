@@ -28,7 +28,7 @@ class ChatServiceImplTest {
     @Mock
     private GenerateContentResponse mockResponse;
     @InjectMocks
-    private ChatServiceImpl chatService;
+    private DrawingAnalysisChatServiceImpl chatService;
 
     @BeforeEach
     void setUp() throws IOException {
