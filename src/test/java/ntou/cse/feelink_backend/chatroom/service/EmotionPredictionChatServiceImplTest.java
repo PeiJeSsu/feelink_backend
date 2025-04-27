@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
-public class EmotionPredictionChatServiceImplTest {
+class EmotionPredictionChatServiceImplTest {
     @Mock
     private ChatSession chatSession;
     @Mock
