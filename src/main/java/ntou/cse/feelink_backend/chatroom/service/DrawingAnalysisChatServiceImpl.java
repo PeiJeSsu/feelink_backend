@@ -21,7 +21,7 @@ public class DrawingAnalysisChatServiceImpl {
         GenerateContentResponse response;
 
         String processedText = processText(userMessage);
-        Object processedImage = (file != null && !file.isEmpty()) ? processImage(file) : null;
+        Object processedImage = processImage(file);
 
         try {
             if (processedImage != null) {

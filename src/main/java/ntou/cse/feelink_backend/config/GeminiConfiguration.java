@@ -21,9 +21,9 @@ public class GeminiConfiguration {
     @Bean
     public GenerationConfig generationConfigForAnalysis() {
         return GenerationConfig.newBuilder()
-                .setTemperature(0.7f)
+                .setTemperature(0.8f)
                 .setTopP(0.8f)
-                .setMaxOutputTokens(256)
+                .setMaxOutputTokens(512)
                 .build();
     }
 
