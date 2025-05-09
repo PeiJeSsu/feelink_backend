@@ -19,7 +19,7 @@ public class EmotionPredictionChatServiceImpl{
     public String processChat(MultipartFile file, String userMessage) throws IOException {
         GenerateContentResponse response;
 
-        String processedText = processText(userMessage);
+        String processedText = ChatInputProcessor.processText(userMessage, "請預測我的心情和感興趣的話題");
 
         try {
             response = emotionPredictorChatSession.sendMessage(processedText);
@@ -28,10 +28,4 @@ public class EmotionPredictionChatServiceImpl{
             return "AI處理情緒預測錯誤";
         }
     }
-
-    private String processText(String userMessage){
-        if (userMessage == null || userMessage.isBlank()) {return "請預測我的心情和感興趣的話題";}
-        return userMessage;
-    }
-
 }

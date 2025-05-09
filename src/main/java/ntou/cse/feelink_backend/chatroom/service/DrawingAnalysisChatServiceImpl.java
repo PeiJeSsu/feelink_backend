@@ -3,7 +3,6 @@ package ntou.cse.feelink_backend.chatroom.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.*;
 import java.io.IOException;
@@ -20,8 +19,8 @@ public class DrawingAnalysisChatServiceImpl {
     public String processChat(MultipartFile file, String userMessage) throws IOException {
         GenerateContentResponse response;
 
-        String processedText = processText(userMessage);
-        Object processedImage = processImage(file);
+        String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");
+        Object processedImage = ChatInputProcessor.processImage(file);
 
         try {
             if (processedImage != null) {
@@ -35,15 +34,5 @@ public class DrawingAnalysisChatServiceImpl {
         } catch (Exception e) {
             return "AI處理錯誤";
         }
-    }
-
-    private String processText(String userMessage){
-        if (userMessage == null || userMessage.isBlank()) {return "請分析這張圖片";}
-        return userMessage;
-    }
-
-    private Object processImage(MultipartFile file) throws IOException {
-        if (file == null || file.isEmpty()) { return null; }
-        return PartMaker.fromMimeTypeAndData(file.getContentType(), file.getBytes());
     }
 }
