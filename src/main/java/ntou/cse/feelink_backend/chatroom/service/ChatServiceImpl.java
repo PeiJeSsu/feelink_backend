@@ -2,7 +2,6 @@ package ntou.cse.feelink_backend.chatroom.service;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
