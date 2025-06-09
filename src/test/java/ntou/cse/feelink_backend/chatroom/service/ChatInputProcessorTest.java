@@ -9,10 +9,11 @@ import static org.mockito.Mockito.*;
 class ChatInputProcessorTest {
 
     @Test
-    void constructorCoverage() {
-        new ChatInputProcessor();
+    void constructorCoverage() throws Exception {
+        var constructor = ChatInputProcessor.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        constructor.newInstance();
     }
-
     @Test
     void processText_nullOrBlank() {
         assertEquals("hint", ChatInputProcessor.processText(null, "hint"));

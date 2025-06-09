@@ -7,7 +7,7 @@ public class ChatMessage {
     private String sessionId;
 
     public ChatMessage() {
-        // Constructor for ChatMessage class.
+
     }
 
     public Long getId() {

@@ -23,7 +23,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
-        String emotionPrediction = emotionPredictionChatService.processChat(null, userMessage);
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
 
         String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt);

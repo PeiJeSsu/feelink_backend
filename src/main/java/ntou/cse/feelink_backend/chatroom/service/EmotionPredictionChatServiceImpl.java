@@ -16,7 +16,7 @@ public class EmotionPredictionChatServiceImpl{
         this.emotionPredictorChatSession = emotionPredictorChatSession;
     }
 
-    public String processChat(MultipartFile file, String userMessage) throws IOException {
+    public String processChat(String userMessage) throws IOException {
         GenerateContentResponse response;
 
         String processedText = ChatInputProcessor.processText(userMessage, "請預測我的心情和感興趣的話題");

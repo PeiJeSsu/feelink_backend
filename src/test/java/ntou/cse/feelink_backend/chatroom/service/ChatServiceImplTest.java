@@ -29,7 +29,7 @@ class ChatServiceImplTest {
         String userMessage = "畫了太陽";
         String sessionId = "session-123";
 
-        when(emotionPredictionChatService.processChat(isNull(), eq(userMessage)))
+        when(emotionPredictionChatService.processChat(eq(userMessage)))
                 .thenReturn("開心");
 
         when(drawingAnalysisChatService.processChat(eq(file), contains("開心")))
@@ -41,7 +41,7 @@ class ChatServiceImplTest {
         assertFalse(result.isUser());
         assertEquals(sessionId, result.getSessionId());
 
-        verify(emotionPredictionChatService, times(1)).processChat(isNull(), eq(userMessage));
+        verify(emotionPredictionChatService, times(1)).processChat(eq(userMessage));
         verify(drawingAnalysisChatService, times(1)).processChat(eq(file), contains("開心"));
     }
 }

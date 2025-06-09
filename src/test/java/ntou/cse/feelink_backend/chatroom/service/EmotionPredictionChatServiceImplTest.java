@@ -38,15 +38,15 @@ class EmotionPredictionChatServiceImplTest {
 
     @Test
     void normalText() throws IOException {
-        String resp = service.processChat(null, "今天天氣很好");
+        String resp = service.processChat("今天天氣很好");
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("今天天氣很好");
     }
 
     @Test
     void nullOrBlank() throws IOException {
-        String r1 = service.processChat(null, null);
-        String r2 = service.processChat(null, "   ");
+        String r1 = service.processChat( null);
+        String r2 = service.processChat( "   ");
         assertEquals("Mock AI 回應", r1);
         assertEquals("Mock AI 回應", r2);
         verify(chatSession, times(2)).sendMessage("請預測我的心情和感興趣的話題");
@@ -55,7 +55,7 @@ class EmotionPredictionChatServiceImplTest {
     @Test
     void exception_returnsErrorMessage() throws IOException {
         when(chatSession.sendMessage("Err")).thenThrow(new RuntimeException("fail"));
-        String resp = service.processChat(null, "Err");
+        String resp = service.processChat( "Err");
         assertEquals("AI處理情緒預測錯誤", resp);
     }
 }

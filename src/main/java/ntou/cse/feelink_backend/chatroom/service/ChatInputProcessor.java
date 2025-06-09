@@ -5,6 +5,9 @@ import com.google.cloud.vertexai.generativeai.PartMaker;
 import java.io.IOException;
 
 public class ChatInputProcessor {
+
+    private ChatInputProcessor() {
+    }
     public static String processText(String userMessage, String defaultHint) {
         if (userMessage == null || userMessage.isBlank()) {
             return defaultHint;
