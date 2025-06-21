@@ -7,7 +7,7 @@ public class ChatMessage {
     private String sessionId;
 
     public ChatMessage() {
-
+        throw new UnsupportedOperationException("Empty constructor not supported.");
     }
 
     public Long getId() {
