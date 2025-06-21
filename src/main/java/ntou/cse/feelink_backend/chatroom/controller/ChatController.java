@@ -10,6 +10,7 @@ import java.io.IOException;
 
 @RestController
 public class ChatController {
+
     private final ChatService chatService;
 
     @Autowired
@@ -23,18 +24,7 @@ public class ChatController {
             @RequestParam("userMessage") String userMessage,
             @RequestParam("sessionId") String sessionId) throws IOException {
 
-        String aiResponse = chatService.processChat(file, userMessage);
-
-        ChatMessage aiMsg = createChatMessage(aiResponse, false, sessionId);
-
+        ChatMessage aiMsg = chatService.processChat(file, userMessage, sessionId);
         return ResponseEntity.ok(aiMsg);
-    }
-
-    private ChatMessage createChatMessage(String content, boolean isUser, String sessionId) {
-        ChatMessage message = new ChatMessage();
-        message.setContent(content);
-        message.setUser(isUser);
-        message.setSessionId(sessionId);
-        return message;
     }
 }

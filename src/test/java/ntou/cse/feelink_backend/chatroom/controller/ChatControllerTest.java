@@ -1,62 +1,78 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
+import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 @ExtendWith(MockitoExtension.class)
 class ChatControllerTest {
-    @InjectMocks
-    private ChatController chatController;
+
+    private MockMvc mockMvc;
     @Mock
     private ChatService chatService;
-    private MockMvc mockMvc;
-
+    @InjectMocks
+    private ChatController chatController;
     @BeforeEach
-    void setup() {
-        mockMvc = MockMvcBuilders.standaloneSetup(chatController).build();
+    void setUp() {
+        mockMvc = standaloneSetup(chatController).build();
     }
 
     @Test
-    void testChatWithFileAndText() throws Exception {
-        when(chatService.processChat(any(), anyString())).thenReturn("Mock AI response");
+    void testChatWithoutFile() throws Exception {
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("AI 回應（無檔案）");
+        aiMsg.setUser(false);
+        aiMsg.setSessionId("S1");
 
-        MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", "fake image".getBytes());
+        given(chatService.processChat(isNull(), eq("hi"), eq("S1")))
+                .willReturn(aiMsg);
+
+        mockMvc.perform(post("/chat")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("userMessage", "hi")
+                        .param("sessionId", "S1")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("AI 回應（無檔案）"))
+                .andExpect(jsonPath("$.user").value(false))
+                .andExpect(jsonPath("$.sessionId").value("S1"));
+    }
+
+    @Test
+    void testChatWithFile() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[]{/* ... */});
+
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("AI 回應（有檔案）");
+        aiMsg.setUser(false);
+        aiMsg.setSessionId("S2");
+
+        given(chatService.processChat(any(), eq("analyze"), eq("S2")))
+                .willReturn(aiMsg);
 
         mockMvc.perform(multipart("/chat")
                         .file(file)
-                        .param("userMessage", "Hello Image")
-                        .param("sessionId", "testSession")
-                        .with(request -> { request.setMethod("POST"); return request; }))
+                        .param("userMessage", "analyze")
+                        .param("sessionId", "S2")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").value("Mock AI response"))
-                .andExpect(jsonPath("$.sessionId").value("testSession"))
-                .andExpect(jsonPath("$.user").value(false));
-    }
-
-    @Test
-    void testChatWithText() throws Exception {
-        when(chatService.processChat(null, "Only Text")).thenReturn("Mock AI response");
-
-        mockMvc.perform(multipart("/chat")
-                        .param("userMessage", "Only Text")
-                        .param("sessionId", "testSession")
-                        .with(request -> { request.setMethod("POST"); return request; }))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").value("Mock AI response"))
-                .andExpect(jsonPath("$.sessionId").value("testSession"))
-                .andExpect(jsonPath("$.user").value(false));
+                .andExpect(jsonPath("$.content").value("AI 回應（有檔案）"))
+                .andExpect(jsonPath("$.sessionId").value("S2"));
     }
 }

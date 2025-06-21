@@ -7,7 +7,9 @@ public class ChatMessage {
     private String sessionId;
 
     public ChatMessage() {
-        // Constructor for ChatMessage class.
+        this.content = "";
+        this.isUser = false;
+        this.sessionId = "";
     }
 
     public Long getId() {

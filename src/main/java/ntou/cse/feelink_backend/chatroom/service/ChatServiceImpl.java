@@ -1,50 +1,39 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
+import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.google.cloud.vertexai.generativeai.PartMaker;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.*;
+
 import java.io.IOException;
 
 @Service
 public class ChatServiceImpl implements ChatService {
-    private final ChatSession chatSession;
+
+    private final DrawingAnalysisChatServiceImpl drawingAnalysisChatService;
+    private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
 
     @Autowired
-    public ChatServiceImpl(ChatSession chatSession) {
-        this.chatSession = chatSession;
+    public ChatServiceImpl(
+            DrawingAnalysisChatServiceImpl drawingAnalysisChatService,
+            EmotionPredictionChatServiceImpl emotionPredictionChatService) {
+        this.drawingAnalysisChatService = drawingAnalysisChatService;
+        this.emotionPredictionChatService = emotionPredictionChatService;
     }
 
     @Override
-    public String processChat(MultipartFile file, String userMessage) throws IOException {
-        GenerateContentResponse response;
+    public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
 
-        String processedText = processText(userMessage);
-        Object processedImage = (file != null && !file.isEmpty()) ? processImage(file) : null;
+        String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
+        String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt);
 
-        try {
-            if (processedImage != null) {
-                response = chatSession.sendMessage(
-                        ContentMaker.fromMultiModalData(processedImage, processedText)
-                );
-            } else {
-                response = chatSession.sendMessage(processedText);
-            }
-            return ResponseHandler.getText(response);
-        } catch (Exception e) {
-            return "AI處理錯誤";
-        }
-    }
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent(drawingAnalysisResponse);
+        aiMsg.setUser(false);
+        aiMsg.setSessionId(sessionId);
 
-    private String processText(String userMessage){
-        if (userMessage == null || userMessage.isBlank()) {return "請分析這張圖片";}
-        return userMessage;
-    }
-
-    private Object processImage(MultipartFile file) throws IOException {
-        if (file == null || file.isEmpty()) { return null; }
-        return PartMaker.fromMimeTypeAndData(file.getContentType(), file.getBytes());
+        return aiMsg;
     }
 }
+
