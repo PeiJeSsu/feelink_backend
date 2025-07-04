@@ -12,7 +12,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final DrawingAnalysisChatServiceImpl drawingAnalysisChatService;
     private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
-
+    private final MessageFormattingService messageFormattingService = new MessageFormattingService();
     @Autowired
     public ChatServiceImpl(
             DrawingAnalysisChatServiceImpl drawingAnalysisChatService,
@@ -22,10 +22,11 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
-        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
+    public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage, conversationCount, hasDefaultQuestion);
 
-        String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
+        String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt);
 
         ChatMessage aiMsg = new ChatMessage();
@@ -36,4 +37,3 @@ public class ChatServiceImpl implements ChatService {
         return aiMsg;
     }
 }
-

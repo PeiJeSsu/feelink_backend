@@ -22,9 +22,11 @@ public class ChatController {
     public ResponseEntity<ChatMessage> chat(
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("userMessage") String userMessage,
-            @RequestParam("sessionId") String sessionId) throws IOException {
+            @RequestParam("sessionId") String sessionId,
+            @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
+            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
 
-        ChatMessage aiMsg = chatService.processChat(file, userMessage, sessionId);
+        ChatMessage aiMsg = chatService.processChat(file, userMessage, sessionId, conversationCount, hasDefaultQuestion);
         return ResponseEntity.ok(aiMsg);
     }
 }
