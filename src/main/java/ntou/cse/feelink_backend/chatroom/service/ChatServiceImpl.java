@@ -26,7 +26,7 @@ public class ChatServiceImpl implements ChatService {
         String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
 
         String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
-        String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt);
+        String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt,sessionId);
 
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setContent(drawingAnalysisResponse);

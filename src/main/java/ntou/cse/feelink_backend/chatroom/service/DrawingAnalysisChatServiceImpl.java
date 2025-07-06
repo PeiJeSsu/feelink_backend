@@ -9,15 +9,15 @@ import java.io.IOException;
 
 @Service
 public class DrawingAnalysisChatServiceImpl {
-    private final ChatSession drawingAnalysisChatSession;
+    private final ChatSessionRegistry registry;
 
-    @Autowired
-    public DrawingAnalysisChatServiceImpl(ChatSession drawingAnalysisChatSession) {
-        this.drawingAnalysisChatSession = drawingAnalysisChatSession;
+    public DrawingAnalysisChatServiceImpl(ChatSessionRegistry registry) {
+        this.registry = registry;
     }
 
-    public String processChat(MultipartFile file, String userMessage) throws IOException {
+    public String processChat(MultipartFile file, String userMessage,String sessionId) throws IOException {
         GenerateContentResponse response;
+        ChatSession drawingAnalysisChatSession = registry.getSession(sessionId);
 
         String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");
         Object processedImage = ChatInputProcessor.processImage(file);
