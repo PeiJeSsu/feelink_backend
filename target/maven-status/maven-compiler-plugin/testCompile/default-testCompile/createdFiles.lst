@@ -1,0 +1,6 @@
+ntou\cse\feelink_backend\chatroom\service\ChatServiceImplTest.class
+ntou\cse\feelink_backend\chatroom\service\EmotionPredictionChatServiceImplTest.class
+ntou\cse\feelink_backend\chatroom\model\ChatMessageTest.class
+ntou\cse\feelink_backend\chatroom\controller\ChatControllerTest.class
+ntou\cse\feelink_backend\chatroom\service\ChatInputProcessorTest.class
+ntou\cse\feelink_backend\chatroom\service\DrawingAnalysisChatServiceImplTest.class

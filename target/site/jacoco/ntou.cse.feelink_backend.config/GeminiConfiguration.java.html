@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeminiConfiguration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">feelink_backend</a> &gt; <a href="index.source.html" class="el_package">ntou.cse.feelink_backend.config</a> &gt; <span class="el_source">GeminiConfiguration.java</span></div><h1>GeminiConfiguration.java</h1><pre class="source lang-java linenums">package ntou.cse.feelink_backend.config;
+
+import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.generativeai.ChatSession;
+import com.google.cloud.vertexai.generativeai.ContentMaker;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+<span class="nc" id="L12">public class GeminiConfiguration {</span>
+    private static final String INSTRUCTION_FOR_ANALYSIS = &quot;請分析這張繪畫，並以繁體中文說明它可能反映的使用者情緒。從心理學的角度，解釋繪畫中的哪些特徵可能與特定的情緒相關聯。你的回應應該引導使用者思考這些可能的聯繫，鼓勵他們探索自己的內心感受，而不是直接給出情緒標籤。請避免使用過於強烈的斷言，並保持解釋性的語氣，解釋為何推論出，並給予使用者陪伴感。也輪流擔任聆聽者與引導者。不要透漏有先前的情緒預測結果。&quot;;
+    private static final String INSTRUCTION_FOR_PREDICTION  = &quot;請根據使用者提供的文字或先前的互動，預測使用者接下來可能的心情和感興趣的話題。不要給予關心或回應，做預測即可。&quot;;
+
+    @Bean
+    public VertexAI vertexAI() {
+<span class="nc" id="L18">        return new VertexAI(&quot;graduate-project-450802&quot;,&quot;asia-southeast1&quot;);</span>
+    }
+
+    @Bean
+    public GenerationConfig generationConfigForAnalysis() {
+<span class="nc" id="L23">        return GenerationConfig.newBuilder()</span>
+<span class="nc" id="L24">                .setTemperature(0.8f)</span>
+<span class="nc" id="L25">                .setTopP(0.8f)</span>
+<span class="nc" id="L26">                .setMaxOutputTokens(512)</span>
+<span class="nc" id="L27">                .build();</span>
+    }
+
+    @Bean
+    public GenerationConfig generationConfigForPrediction() {
+<span class="nc" id="L32">        return GenerationConfig.newBuilder()</span>
+<span class="nc" id="L33">                .setTemperature(0.5f)</span>
+<span class="nc" id="L34">                .setTopP(0.6f)</span>
+<span class="nc" id="L35">                .setMaxOutputTokens(32)</span>
+<span class="nc" id="L36">                .build();</span>
+    }
+
+    @Bean
+    public GenerativeModel drawingAnalysisModel(VertexAI vertexAI, GenerationConfig generationConfigForAnalysis) {
+<span class="nc" id="L41">        return new GenerativeModel.Builder()</span>
+<span class="nc" id="L42">                .setModelName(&quot;gemini-1.5-pro-002&quot;)</span>
+<span class="nc" id="L43">                .setVertexAi(vertexAI)</span>
+<span class="nc" id="L44">                .setGenerationConfig(generationConfigForAnalysis)</span>
+<span class="nc" id="L45">                .setSystemInstruction(ContentMaker.fromString(INSTRUCTION_FOR_ANALYSIS))</span>
+<span class="nc" id="L46">                .build();</span>
+    }
+
+    @Bean
+    public GenerativeModel emotionPredictorModel(VertexAI vertexAI, GenerationConfig generationConfigForPrediction) {
+<span class="nc" id="L51">        return new GenerativeModel.Builder()</span>
+<span class="nc" id="L52">                .setModelName(&quot;gemini-1.5-pro-002&quot;)</span>
+<span class="nc" id="L53">                .setVertexAi(vertexAI)</span>
+<span class="nc" id="L54">                .setGenerationConfig(generationConfigForPrediction)</span>
+<span class="nc" id="L55">                .setSystemInstruction(ContentMaker.fromString(INSTRUCTION_FOR_PREDICTION ))</span>
+<span class="nc" id="L56">                .build();</span>
+    }
+
+    @Bean
+    public ChatSession drawingAnalysisChatSession(GenerativeModel drawingAnalysisModel) {
+<span class="nc" id="L61">        return new ChatSession(drawingAnalysisModel);</span>
+    }
+
+    @Bean
+    public ChatSession emotionPredictorChatSession(GenerativeModel emotionPredictorModel) {
+<span class="nc" id="L66">        return new ChatSession(emotionPredictorModel);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
