@@ -1,10 +1,10 @@
+ntou\cse\feelink_backend\chatroom\controller\ChatController.class
+ntou\cse\feelink_backend\chatroom\model\ChatMessage.class
 ntou\cse\feelink_backend\chatroom\service\ChatInputProcessor.class
 ntou\cse\feelink_backend\config\GeminiConfiguration.class
 ntou\cse\feelink_backend\chatroom\service\ChatService.class
 ntou\cse\feelink_backend\config\WebConfig.class
 ntou\cse\feelink_backend\FeelinkBackendApplication.class
+ntou\cse\feelink_backend\chatroom\service\EmotionPredictionChatServiceImpl.class
 ntou\cse\feelink_backend\chatroom\service\ChatServiceImpl.class
 ntou\cse\feelink_backend\chatroom\service\DrawingAnalysisChatServiceImpl.class
-ntou\cse\feelink_backend\chatroom\controller\ChatController.class
-ntou\cse\feelink_backend\chatroom\model\ChatMessage.class
-ntou\cse\feelink_backend\chatroom\service\EmotionPredictionChatServiceImpl.class
