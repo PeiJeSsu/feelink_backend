@@ -15,4 +15,4 @@ exec java -jar /app/app.jar --server.port=$PORT\n' > /entrypoint.sh \
 
 COPY --from=build /app/target/feelink_backend-0.0.1-SNAPSHOT.jar /app/app.jar
 EXPOSE 8080
-CMD ["sh", "-c", "java -jar /app/app.jar --server.port=${PORT}"]
+ENTRYPOINT ["/entrypoint.sh"]
