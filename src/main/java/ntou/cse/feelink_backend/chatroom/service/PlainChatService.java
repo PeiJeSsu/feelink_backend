@@ -15,7 +15,7 @@ public class PlainChatService {
         this.registry = registry;
     }
 
-    public ChatMessage reply(String userMsg, String sessionId) {
+    public ChatMessage reply(String userMessage, String sessionId) {
 
         ChatSession chatSession = registry.getSession(sessionId);
 
@@ -24,7 +24,7 @@ public class PlainChatService {
         aiMsg.setSessionId(sessionId);
 
         try {
-            GenerateContentResponse resp = chatSession.sendMessage(userMsg);
+            GenerateContentResponse resp = chatSession.sendMessage(userMessage);
             aiMsg.setContent(ResponseHandler.getText(resp));
         } catch (Exception e) {
             aiMsg.setContent("AI處理錯誤");

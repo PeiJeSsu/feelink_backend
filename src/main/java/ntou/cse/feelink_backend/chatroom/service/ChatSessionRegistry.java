@@ -23,8 +23,12 @@ public class ChatSessionRegistry {
         ChatSession session = pool.get(sessionId);
         if (session == null) {
             ChatSession newSession = new ChatSession(drawingAnalysisModel);
-            ChatSession existed     = pool.putIfAbsent(sessionId, newSession);
-            session = existed != null ? existed : newSession;
+            ChatSession existed    = pool.putIfAbsent(sessionId, newSession);
+            if (existed != null) {
+                session = existed;
+            } else {
+                session = newSession;
+            }
         }
         return session;
     }

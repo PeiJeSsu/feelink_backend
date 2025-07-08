@@ -21,11 +21,13 @@ import static org.mockito.Mockito.*;
 class DrawingAnalysisChatServiceImplTest {
     @Mock private ChatSession chatSession;
     @Mock private GenerateContentResponse mockResponse;
+    @Mock ChatSessionRegistry registry;
     @InjectMocks private DrawingAnalysisChatServiceImpl service;
-
+    private static final String sessionId = "1";
     @BeforeEach
     void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
+        when(registry.getSession(anyString())).thenReturn(chatSession);
         when(mockResponse.toString()).thenReturn("Mock AI 回應");
         Candidate cand = mock(Candidate.class);
         Content content = mock(Content.class);
@@ -41,23 +43,26 @@ class DrawingAnalysisChatServiceImplTest {
 
     @Test
     void withText() throws IOException {
-        String resp = service.processChat(null, "Hello");
-        assertEquals("Mock AI 回應", resp);
+        String out = service.processChat(null, "Hello", sessionId);
+        assertEquals("Mock AI 回應", out);
+        verify(registry).getSession(sessionId);
         verify(chatSession).sendMessage("Hello");
     }
 
     @Test
     void nullText() throws IOException {
-        String resp = service.processChat(null, null);
+        String resp = service.processChat(null, null, sessionId);
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("請分析這張圖片");
+        verify(registry).getSession(sessionId);
     }
 
     @Test
     void emptyText() throws IOException {
-        String resp = service.processChat(null, "   ");
+        String resp = service.processChat(null, "   ", sessionId);
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("請分析這張圖片");
+        verify(registry).getSession(sessionId);
     }
 
     @Test
@@ -75,9 +80,10 @@ class DrawingAnalysisChatServiceImplTest {
                     .thenReturn(mockPart);
             cm.when(() -> ContentMaker.fromMultiModalData(mockPart, "請分析這張圖片"))
                     .thenReturn(multimodal);
-            String resp = service.processChat(file, "");
+            String resp = service.processChat(file, "", sessionId);
             assertEquals("Mock AI 回應", resp);
             verify(chatSession).sendMessage(multimodal);
+            verify(registry).getSession(sessionId);
         }
     }
 
@@ -85,15 +91,17 @@ class DrawingAnalysisChatServiceImplTest {
     void emptyFile() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(true);
-        String resp = service.processChat(file, "只有空檔案");
+        String resp = service.processChat(file, "只有空檔案", sessionId);
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("只有空檔案");
+        verify(registry).getSession(sessionId);
     }
 
     @Test
     void exception_returnsErrorMessage() throws IOException {
         when(chatSession.sendMessage(anyString())).thenThrow(new RuntimeException("fail"));
-        String resp = service.processChat(null, "Err");
+        String resp = service.processChat(null, "Err", sessionId);
         assertEquals("AI處理錯誤", resp);
+        verify(registry).getSession(sessionId);
     }
 }
