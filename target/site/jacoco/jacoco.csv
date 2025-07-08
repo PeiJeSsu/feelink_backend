@@ -1,0 +1,13 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,ChatServiceImpl,0,40,0,0,0,12,0,2,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,DrawingAnalysisChatServiceImpl,0,45,0,2,0,13,0,3,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,ChatSessionRegistry,0,41,0,4,0,12,0,4,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,PlainChatService,0,36,0,0,0,13,0,2,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,EmotionPredictionChatServiceImpl,0,21,0,0,0,8,0,2,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.service,ChatInputProcessor,0,22,0,8,0,6,0,6,0,2
+feelink_backend,ntou.cse.feelink_backend.config,GeminiConfiguration,65,0,0,0,26,0,8,0,8,0
+feelink_backend,ntou.cse.feelink_backend.config,WebConfig,45,0,0,0,6,0,2,0,2,0
+feelink_backend,ntou.cse.feelink_backend,FeelinkBackendApplication,8,0,0,0,3,0,2,0,2,0
+feelink_backend,ntou.cse.feelink_backend.chatroom.controller,AnalysisController,0,14,0,0,0,4,0,2,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.controller,ChatController,0,13,0,0,0,4,0,2,0,2
+feelink_backend,ntou.cse.feelink_backend.chatroom.model,ChatMessage,0,40,0,0,0,17,0,9,0,9
