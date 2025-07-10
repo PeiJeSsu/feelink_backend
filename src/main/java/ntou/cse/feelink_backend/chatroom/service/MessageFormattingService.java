@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 public class MessageFormattingService {
 
     public String getFullMessage(String messageText, Integer conversationCount, Boolean hasDefaultQuestion) {
-        // 如果 conversationCount 為 null，表示這不是純文字訊息，直接返回基本格式
         if (conversationCount == null) {
             return messageText + "\n請基於這段訊息提供適當的回應，請勿單純重複此訊息。";
         }
