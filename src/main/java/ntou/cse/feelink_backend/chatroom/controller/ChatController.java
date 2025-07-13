@@ -5,7 +5,6 @@ import ntou.cse.feelink_backend.chatroom.service.PlainChatService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/chat")

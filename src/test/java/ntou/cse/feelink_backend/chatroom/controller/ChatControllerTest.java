@@ -10,8 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -39,7 +37,7 @@ class ChatControllerTest {
         aiMsg.setUser(false);
         aiMsg.setSessionId("SID-123");
 
-        given(plainChatService.reply(eq("hello"), eq("SID-123")))
+        given(plainChatService.reply("hello", "SID-123"))
                 .willReturn(aiMsg);
 
         mockMvc.perform(post("/chat")

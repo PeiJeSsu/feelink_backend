@@ -5,18 +5,13 @@ import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
-
 import java.io.IOException;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -27,7 +22,7 @@ class PlainChatServiceTest {
     @Mock private GenerateContentResponse mockResponse;
     @Mock private ChatSessionRegistry registry;
     @InjectMocks private PlainChatService service;
-    private static final String sessionId = "1";
+    private static final String SESSION_ID  = "1";
 
     @BeforeEach
     void setUp() throws IOException {
@@ -46,11 +41,11 @@ class PlainChatServiceTest {
 
     @Test
     void reply_withNormalText() throws IOException {
-        ChatMessage msg = service.reply("Hello", sessionId);
+        ChatMessage msg = service.reply("Hello", SESSION_ID);
         assertEquals("Mock AI 回應", msg.getContent());
         assertFalse(msg.isUser());
-        assertEquals(sessionId, msg.getSessionId());
-        verify(registry).getSession(sessionId);
+        assertEquals(SESSION_ID, msg.getSessionId());
+        verify(registry).getSession(SESSION_ID);
         verify(chatSession).sendMessage("Hello");
     }
 
@@ -58,9 +53,9 @@ class PlainChatServiceTest {
     void reply_whenSendMessageThrows() throws IOException {
         when(chatSession.sendMessage(anyString()))
                 .thenThrow(new RuntimeException("fail"));
-        ChatMessage msg = service.reply("Err", sessionId);
+        ChatMessage msg = service.reply("Err", SESSION_ID);
         assertEquals("AI處理錯誤", msg.getContent());
-        verify(registry).getSession(sessionId);
+        verify(registry).getSession(SESSION_ID);
         verify(chatSession).sendMessage("Err");
     }
 }
