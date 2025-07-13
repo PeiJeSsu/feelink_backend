@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.Impl;
 
 import com.google.cloud.vertexai.api.Candidate;
 import com.google.cloud.vertexai.api.Content;
@@ -6,6 +6,7 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.generativeai.ChatSession;
 import com.google.cloud.vertexai.generativeai.ContentMaker;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -21,7 +22,8 @@ import static org.mockito.Mockito.*;
 class DrawingAnalysisChatServiceImplTest {
     @Mock private ChatSession chatSession;
     @Mock private GenerateContentResponse mockResponse;
-    @Mock ChatSessionRegistry registry;
+    @Mock
+    ChatSessionRegistry registry;
     @InjectMocks private DrawingAnalysisChatServiceImpl service;
     private static final String SESSION_ID  = "1";
     @BeforeEach

@@ -1,7 +1,7 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import ntou.cse.feelink_backend.chatroom.service.PlainChatService;
+import ntou.cse.feelink_backend.chatroom.service.Impl.PlainChatServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,7 @@ class ChatControllerTest {
 
     private MockMvc mockMvc;
     @Mock
-    private PlainChatService plainChatService;
+    private PlainChatServiceImpl plainChatService;
     @InjectMocks
     private ChatController chatController;
     @BeforeEach

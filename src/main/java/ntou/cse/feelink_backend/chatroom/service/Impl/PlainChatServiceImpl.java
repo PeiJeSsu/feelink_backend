@@ -1,17 +1,18 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.Impl;
 
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.ChatSession;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PlainChatService {
+public class PlainChatServiceImpl {
 
     private final ChatSessionRegistry registry;
 
-    public PlainChatService(ChatSessionRegistry registry) {
+    public PlainChatServiceImpl(ChatSessionRegistry registry) {
         this.registry = registry;
     }
 

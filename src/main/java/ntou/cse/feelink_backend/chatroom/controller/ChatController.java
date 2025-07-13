@@ -1,7 +1,7 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import ntou.cse.feelink_backend.chatroom.service.PlainChatService;
+import ntou.cse.feelink_backend.chatroom.service.Impl.PlainChatServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/chat")
 public class ChatController {
 
-    private final PlainChatService service;
+    private final PlainChatServiceImpl service;
 
-    public ChatController(PlainChatService service) {
+    public ChatController(PlainChatServiceImpl service) {
         this.service = service;
     }
 

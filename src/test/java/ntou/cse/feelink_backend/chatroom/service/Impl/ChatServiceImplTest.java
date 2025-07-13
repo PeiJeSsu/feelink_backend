@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.Impl;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.junit.jupiter.api.BeforeEach;

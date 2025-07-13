@@ -1,5 +1,7 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.Impl;
 
+import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.google.cloud.vertexai.api.GenerateContentResponse;

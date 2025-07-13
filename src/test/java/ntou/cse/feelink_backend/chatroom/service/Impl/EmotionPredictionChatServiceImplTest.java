@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.Impl;
 
 import com.google.cloud.vertexai.api.Candidate;
 import com.google.cloud.vertexai.api.Content;
