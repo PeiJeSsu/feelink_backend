@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service.Impl;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;

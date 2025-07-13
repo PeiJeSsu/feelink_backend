@@ -1,7 +1,7 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import ntou.cse.feelink_backend.chatroom.service.Impl.PlainChatServiceImpl;
+import ntou.cse.feelink_backend.chatroom.service.impl.PlainChatServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
