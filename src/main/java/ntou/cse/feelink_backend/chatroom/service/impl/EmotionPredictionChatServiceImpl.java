@@ -1,7 +1,8 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.*;
+import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.io.IOException;

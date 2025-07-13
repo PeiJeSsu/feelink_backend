@@ -1,6 +1,7 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
@@ -9,15 +10,15 @@ import java.io.IOException;
 
 @Service
 public class DrawingAnalysisChatServiceImpl {
-    private final ChatSession drawingAnalysisChatSession;
+    private final ChatSessionRegistry registry;
 
-    @Autowired
-    public DrawingAnalysisChatServiceImpl(ChatSession drawingAnalysisChatSession) {
-        this.drawingAnalysisChatSession = drawingAnalysisChatSession;
+    public DrawingAnalysisChatServiceImpl(ChatSessionRegistry registry) {
+        this.registry = registry;
     }
 
-    public String processChat(MultipartFile file, String userMessage) throws IOException {
+    public String processChat(MultipartFile file, String userMessage,String sessionId) throws IOException {
         GenerateContentResponse response;
+        ChatSession drawingAnalysisChatSession = registry.getSession(sessionId);
 
         String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");
         Object processedImage = ChatInputProcessor.processImage(file);

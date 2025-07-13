@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import com.google.cloud.vertexai.api.Candidate;
 import com.google.cloud.vertexai.api.Content;
@@ -6,6 +6,7 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.generativeai.ChatSession;
 import com.google.cloud.vertexai.generativeai.ContentMaker;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -21,11 +22,14 @@ import static org.mockito.Mockito.*;
 class DrawingAnalysisChatServiceImplTest {
     @Mock private ChatSession chatSession;
     @Mock private GenerateContentResponse mockResponse;
+    @Mock
+    ChatSessionRegistry registry;
     @InjectMocks private DrawingAnalysisChatServiceImpl service;
-
+    private static final String SESSION_ID  = "1";
     @BeforeEach
     void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
+        when(registry.getSession(anyString())).thenReturn(chatSession);
         when(mockResponse.toString()).thenReturn("Mock AI 回應");
         Candidate cand = mock(Candidate.class);
         Content content = mock(Content.class);
@@ -41,23 +45,26 @@ class DrawingAnalysisChatServiceImplTest {
 
     @Test
     void withText() throws IOException {
-        String resp = service.processChat(null, "Hello");
-        assertEquals("Mock AI 回應", resp);
+        String out = service.processChat(null, "Hello", SESSION_ID);
+        assertEquals("Mock AI 回應", out);
+        verify(registry).getSession(SESSION_ID);
         verify(chatSession).sendMessage("Hello");
     }
 
     @Test
     void nullText() throws IOException {
-        String resp = service.processChat(null, null);
+        String resp = service.processChat(null, null, SESSION_ID);
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("請分析這張圖片");
+        verify(registry).getSession(SESSION_ID);
     }
 
     @Test
     void emptyText() throws IOException {
-        String resp = service.processChat(null, "   ");
+        String resp = service.processChat(null, "   ", SESSION_ID);
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("請分析這張圖片");
+        verify(registry).getSession(SESSION_ID);
     }
 
     @Test
@@ -75,9 +82,10 @@ class DrawingAnalysisChatServiceImplTest {
                     .thenReturn(mockPart);
             cm.when(() -> ContentMaker.fromMultiModalData(mockPart, "請分析這張圖片"))
                     .thenReturn(multimodal);
-            String resp = service.processChat(file, "");
+            String resp = service.processChat(file, "", SESSION_ID);
             assertEquals("Mock AI 回應", resp);
             verify(chatSession).sendMessage(multimodal);
+            verify(registry).getSession(SESSION_ID);
         }
     }
 
@@ -85,15 +93,17 @@ class DrawingAnalysisChatServiceImplTest {
     void emptyFile() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(true);
-        String resp = service.processChat(file, "只有空檔案");
+        String resp = service.processChat(file, "只有空檔案", SESSION_ID );
         assertEquals("Mock AI 回應", resp);
         verify(chatSession).sendMessage("只有空檔案");
+        verify(registry).getSession(SESSION_ID);
     }
 
     @Test
     void exception_returnsErrorMessage() throws IOException {
         when(chatSession.sendMessage(anyString())).thenThrow(new RuntimeException("fail"));
-        String resp = service.processChat(null, "Err");
+        String resp = service.processChat(null, "Err", SESSION_ID);
         assertEquals("AI處理錯誤", resp);
+        verify(registry).getSession(SESSION_ID);
     }
 }

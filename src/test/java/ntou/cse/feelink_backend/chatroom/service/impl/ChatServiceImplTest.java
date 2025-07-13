@@ -1,4 +1,4 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,10 +29,10 @@ class ChatServiceImplTest {
         String userMessage = "畫了太陽";
         String sessionId = "session-123";
 
-        when(emotionPredictionChatService.processChat(eq(userMessage)))
+        when(emotionPredictionChatService.processChat(userMessage))
                 .thenReturn("開心");
 
-        when(drawingAnalysisChatService.processChat(eq(file), contains("開心")))
+        when(drawingAnalysisChatService.processChat(eq(file), contains("開心"), eq(sessionId)))
                 .thenReturn("這幅畫讓人感到溫暖");
 
         ChatMessage result = chatService.processChat(file, userMessage, sessionId);
@@ -41,7 +41,7 @@ class ChatServiceImplTest {
         assertFalse(result.isUser());
         assertEquals(sessionId, result.getSessionId());
 
-        verify(emotionPredictionChatService, times(1)).processChat(eq(userMessage));
-        verify(drawingAnalysisChatService, times(1)).processChat(eq(file), contains("開心"));
+        verify(emotionPredictionChatService, times(1)).processChat(userMessage);
+        verify(drawingAnalysisChatService, times(1)).processChat(eq(file), contains("開心"), eq(sessionId));
     }
 }

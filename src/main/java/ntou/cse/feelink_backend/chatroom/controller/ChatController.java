@@ -1,30 +1,26 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
-import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.beans.factory.annotation.Autowired;
+import ntou.cse.feelink_backend.chatroom.service.impl.PlainChatServiceImpl;
 import org.springframework.http.ResponseEntity;
-import java.io.IOException;
+import org.springframework.web.bind.annotation.*;
+
 
 @RestController
+@RequestMapping("/chat")
 public class ChatController {
 
-    private final ChatService chatService;
+    private final PlainChatServiceImpl service;
 
-    @Autowired
-    public ChatController(ChatService chatService) {
-        this.chatService = chatService;
+    public ChatController(PlainChatServiceImpl service) {
+        this.service = service;
     }
 
-    @PostMapping("/chat")
+    @PostMapping
     public ResponseEntity<ChatMessage> chat(
-            @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("userMessage") String userMessage,
-            @RequestParam("sessionId") String sessionId) throws IOException {
+            @RequestParam("sessionId")   String sessionId) {
 
-        ChatMessage aiMsg = chatService.processChat(file, userMessage, sessionId);
-        return ResponseEntity.ok(aiMsg);
+        return ResponseEntity.ok(service.reply(userMessage, sessionId));
     }
 }
