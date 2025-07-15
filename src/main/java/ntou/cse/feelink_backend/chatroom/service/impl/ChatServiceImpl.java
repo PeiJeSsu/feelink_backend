@@ -1,6 +1,7 @@
-package ntou.cse.feelink_backend.chatroom.service;
+package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
+import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +28,7 @@ public class ChatServiceImpl implements ChatService {
 
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
-        String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt);
+        String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt,sessionId);
 
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setContent(drawingAnalysisResponse);
