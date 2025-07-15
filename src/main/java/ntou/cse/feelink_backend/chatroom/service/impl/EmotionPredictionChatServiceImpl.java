@@ -10,15 +10,13 @@ import java.io.IOException;
 @Service
 public class EmotionPredictionChatServiceImpl{
     private final ChatSession emotionPredictorChatSession;
-    private final MessageFormattingService messageFormattingService;
 
     @Autowired
-    public EmotionPredictionChatServiceImpl(ChatSession emotionPredictorChatSession, MessageFormattingService messageFormattingService) {
+    public EmotionPredictionChatServiceImpl(ChatSession emotionPredictorChatSession) {
         this.emotionPredictorChatSession = emotionPredictorChatSession;
-        this.messageFormattingService = messageFormattingService;
     }
 
-    public String processChat(String userMessage, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
+    public String processChat(String userMessage) throws IOException {
         GenerateContentResponse response;
 
         String processedText = ChatInputProcessor.processText(userMessage, "請預測我的心情和感興趣的話題");

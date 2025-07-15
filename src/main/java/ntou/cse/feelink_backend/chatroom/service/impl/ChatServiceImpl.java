@@ -5,7 +5,7 @@ import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import java.io.IOException;
 
 @Service
@@ -23,11 +23,10 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
-        String emotionPrediction = emotionPredictionChatService.processChat(userMessage, conversationCount, hasDefaultQuestion);
+    public ChatMessage processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
 
-        String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
-        String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
+        String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         String drawingAnalysisResponse = drawingAnalysisChatService.processChat(file, analysisPrompt,sessionId);
 
         ChatMessage aiMsg = new ChatMessage();

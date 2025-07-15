@@ -5,6 +5,8 @@ import ntou.cse.feelink_backend.chatroom.service.impl.PlainChatServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 
 @RestController
 @RequestMapping("/chat")
@@ -22,9 +24,6 @@ public class ChatController {
             @RequestParam("sessionId") String sessionId,
             @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
             @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
-
-        //ChatMessage aiMsg = chatService.processChat(file, userMessage, sessionId, conversationCount, hasDefaultQuestion);
-        //return ResponseEntity.ok(aiMsg);
-        return ResponseEntity.ok(service.reply(userMessage, sessionId));
+        return ResponseEntity.ok(service.reply(userMessage, sessionId,conversationCount,hasDefaultQuestion));
     }
 }
