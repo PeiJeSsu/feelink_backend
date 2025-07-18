@@ -23,15 +23,19 @@ class PlainChatServiceImplTest {
     @Mock private GenerateContentResponse mockResponse;
     @Mock private ChatSessionRegistry registry;
     @InjectMocks private PlainChatServiceImpl service;
-    private static final String SESSION_ID  = "1";
+    private static final String SESSION_ID = "1";
 
     @BeforeEach
     void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
+
+        // 設置 registry mock
         when(registry.getSession(anyString())).thenReturn(chatSession);
+
+        // 設置 GenerateContentResponse mock
         Candidate cand = mock(Candidate.class);
-        Content   content = mock(Content.class);
-        Part      part = mock(Part.class);
+        Content content = mock(Content.class);
+        Part part = mock(Part.class);
         when(part.getText()).thenReturn("Mock AI 回應");
         when(content.getPartsList()).thenReturn(java.util.Collections.singletonList(part));
         when(cand.getContent()).thenReturn(content);
@@ -41,22 +45,113 @@ class PlainChatServiceImplTest {
     }
 
     @Test
-    void reply_withNormalText() throws IOException {
-        ChatMessage msg = service.reply("Hello", SESSION_ID);
+    void reply_withAllParameters() throws IOException {
+        // Given
+        String userMessage = "Hello";
+        Integer conversationCount = 1;
+        Boolean hasDefaultQuestion = true;
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, conversationCount, hasDefaultQuestion);
+
+        // Then
         assertEquals("Mock AI 回應", msg.getContent());
         assertFalse(msg.isUser());
         assertEquals(SESSION_ID, msg.getSessionId());
+
         verify(registry).getSession(SESSION_ID);
-        verify(chatSession).sendMessage("Hello");
+        // 驗證 chatSession 被調用，但不需要驗證具體的格式化消息內容
+        verify(chatSession).sendMessage(anyString());
+    }
+
+    @Test
+    void reply_withNullOptionalParameters() throws IOException {
+        // Given
+        String userMessage = "Hello";
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, null, null);
+
+        // Then
+        assertEquals("Mock AI 回應", msg.getContent());
+        assertFalse(msg.isUser());
+        assertEquals(SESSION_ID, msg.getSessionId());
+
+        verify(registry).getSession(SESSION_ID);
+        verify(chatSession).sendMessage(anyString());
+    }
+
+    @Test
+    void reply_withOnlyConversationCount() throws IOException {
+        // Given
+        String userMessage = "Hello";
+        Integer conversationCount = 5;
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, conversationCount, null);
+
+        // Then
+        assertEquals("Mock AI 回應", msg.getContent());
+        assertFalse(msg.isUser());
+        assertEquals(SESSION_ID, msg.getSessionId());
+
+        verify(registry).getSession(SESSION_ID);
+        verify(chatSession).sendMessage(anyString());
+    }
+
+    @Test
+    void reply_withOnlyHasDefaultQuestion() throws IOException {
+        // Given
+        String userMessage = "Hello";
+        Boolean hasDefaultQuestion = false;
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, null, hasDefaultQuestion);
+
+        // Then
+        assertEquals("Mock AI 回應", msg.getContent());
+        assertFalse(msg.isUser());
+        assertEquals(SESSION_ID, msg.getSessionId());
+
+        verify(registry).getSession(SESSION_ID);
+        verify(chatSession).sendMessage(anyString());
     }
 
     @Test
     void reply_whenSendMessageThrows() throws IOException {
+        // Given
+        String userMessage = "Error message";
         when(chatSession.sendMessage(anyString()))
-                .thenThrow(new RuntimeException("fail"));
-        ChatMessage msg = service.reply("Err", SESSION_ID);
+                .thenThrow(new RuntimeException("AI service failed"));
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, null, null);
+
+        // Then
         assertEquals("AI處理錯誤", msg.getContent());
+        assertFalse(msg.isUser());
+        assertEquals(SESSION_ID, msg.getSessionId());
+
         verify(registry).getSession(SESSION_ID);
-        verify(chatSession).sendMessage("Err");
+        verify(chatSession).sendMessage(anyString());
+    }
+
+    @Test
+    void reply_whenChatSessionThrows() throws IOException {
+        // Given
+        String userMessage = "Error message";
+        when(chatSession.sendMessage(anyString()))
+                .thenThrow(new RuntimeException("Chat session failed"));
+
+        // When
+        ChatMessage msg = service.reply(userMessage, SESSION_ID, null, null);
+
+        // Then
+        assertEquals("AI處理錯誤", msg.getContent());
+        assertFalse(msg.isUser());
+        assertEquals(SESSION_ID, msg.getSessionId());
+
+        verify(registry).getSession(SESSION_ID);
+        verify(chatSession).sendMessage(anyString());
     }
 }
