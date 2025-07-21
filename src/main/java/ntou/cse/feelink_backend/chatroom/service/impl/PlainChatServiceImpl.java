@@ -41,9 +41,7 @@ public class PlainChatServiceImpl {
 
         new Thread(() -> {
             try {
-                ResponseStream<GenerateContentResponse> responseStream =
-                        chatSession.sendMessageStream(userMessage);
-
+                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(userMessage);
                 for (GenerateContentResponse response : responseStream) {
                     String token = ResponseHandler.getText(response);
                     if (token != null && !token.isEmpty()) {
