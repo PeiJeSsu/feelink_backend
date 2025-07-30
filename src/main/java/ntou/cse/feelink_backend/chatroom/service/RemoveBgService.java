@@ -94,7 +94,7 @@ public class RemoveBgService {
     }
 
     public Mono<String> testApiKey() {
-        System.out.println("測試API密鑰: " + apiKey.substring(0, Math.min(10, apiKey.length())) + "...");
+        System.out.println("測試API密鑰中...");
         System.out.println("API密鑰長度: " + apiKey.length());
 
         return webClient.get()
