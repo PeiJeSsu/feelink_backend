@@ -31,7 +31,7 @@ public class RemoveBgService {
 
     public Mono<byte[]> removeBackground(MultipartFile file) {
         try {
-            System.out.println("使用API密鑰: " + apiKey.substring(0, 10) + "...");
+            // Removed logging of API key to prevent security risks.
 
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
             builder.part("image_file", file.getBytes())
