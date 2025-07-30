@@ -59,7 +59,7 @@ public class AIDrawingController {
                     }
                 } catch (Exception bgError) {
                     logger.error("去背處理失敗: {}", bgError.getMessage(), bgError);
-                    geminiResponse.setMessage(geminiResponse.getMessage() + " (去背失敗: " + bgError.getMessage() + ")");
+                    geminiResponse.setMessage(geminiResponse.getMessage() );
                 }
             }
             AIDrawingResponse response = new AIDrawingResponse(true, geminiResponse);
