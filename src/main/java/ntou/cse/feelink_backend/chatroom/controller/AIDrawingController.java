@@ -11,10 +11,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.mock.web.MockMultipartFile;
 import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Base64;
 
 @RestController
 public class AIDrawingController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AIDrawingController.class);
 
     @Autowired
     private GeminiService geminiService;
