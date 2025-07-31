@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
+import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import java.io.IOException;
 
 @Service
@@ -14,7 +14,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final DrawingAnalysisChatServiceImpl drawingAnalysisChatService;
     private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
-
+    private final MessageFormattingService messageFormattingService = new MessageFormattingService();
     @Autowired
     public ChatServiceImpl(
             DrawingAnalysisChatServiceImpl drawingAnalysisChatService,
@@ -44,4 +44,4 @@ public class ChatServiceImpl implements ChatService {
         return drawingAnalysisChatService.processChatStream(file, analysisPrompt, sessionId);
     }
 }
-
+}

@@ -20,7 +20,6 @@ public class EmotionPredictionChatServiceImpl{
         GenerateContentResponse response;
 
         String processedText = ChatInputProcessor.processText(userMessage, "請預測我的心情和感興趣的話題");
-
         try {
             response = emotionPredictorChatSession.sendMessage(processedText);
             return ResponseHandler.getText(response);

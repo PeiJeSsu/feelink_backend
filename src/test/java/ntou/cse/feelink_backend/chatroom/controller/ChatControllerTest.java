@@ -24,22 +24,50 @@ class ChatControllerTest {
     private PlainChatServiceImpl plainChatService;
     @InjectMocks
     private ChatController chatController;
+
     @BeforeEach
     void setUp() {
         mockMvc = standaloneSetup(chatController).build();
     }
 
     @Test
-    void chat_shouldReturnAiMessage() throws Exception {
-
+    void chat_shouldReturnAiMessage_withAllParameters() throws Exception {
+        // Given
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setContent("AI 回應");
         aiMsg.setUser(false);
         aiMsg.setSessionId("SID-123");
 
-        given(plainChatService.reply("hello", "SID-123"))
+        given(plainChatService.reply("hello", "SID-123", 1, true))
                 .willReturn(aiMsg);
 
+        // When & Then
+        mockMvc.perform(post("/chat")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("userMessage", "hello")
+                        .param("sessionId", "SID-123")
+                        .param("conversationCount", "1")
+                        .param("hasDefaultQuestion", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("AI 回應"))
+                .andExpect(jsonPath("$.user").value(false))
+                .andExpect(jsonPath("$.sessionId").value("SID-123"));
+
+        verify(plainChatService).reply("hello", "SID-123", 1, true);
+    }
+
+    @Test
+    void chat_shouldReturnAiMessage_withOptionalParametersAsNull() throws Exception {
+        // Given
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("AI 回應");
+        aiMsg.setUser(false);
+        aiMsg.setSessionId("SID-123");
+
+        given(plainChatService.reply("hello", "SID-123", null, null))
+                .willReturn(aiMsg);
+
+        // When & Then
         mockMvc.perform(post("/chat")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("userMessage", "hello")
@@ -49,6 +77,56 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.user").value(false))
                 .andExpect(jsonPath("$.sessionId").value("SID-123"));
 
-        verify(plainChatService).reply("hello", "SID-123");
+        verify(plainChatService).reply("hello", "SID-123", null, null);
+    }
+
+    @Test
+    void chat_shouldReturnAiMessage_withOnlyConversationCount() throws Exception {
+        // Given
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("AI 回應");
+        aiMsg.setUser(false);
+        aiMsg.setSessionId("SID-123");
+
+        given(plainChatService.reply("hello", "SID-123", 5, null))
+                .willReturn(aiMsg);
+
+        // When & Then
+        mockMvc.perform(post("/chat")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("userMessage", "hello")
+                        .param("sessionId", "SID-123")
+                        .param("conversationCount", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("AI 回應"))
+                .andExpect(jsonPath("$.user").value(false))
+                .andExpect(jsonPath("$.sessionId").value("SID-123"));
+
+        verify(plainChatService).reply("hello", "SID-123", 5, null);
+    }
+
+    @Test
+    void chat_shouldReturnAiMessage_withOnlyHasDefaultQuestion() throws Exception {
+        // Given
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("AI 回應");
+        aiMsg.setUser(false);
+        aiMsg.setSessionId("SID-123");
+
+        given(plainChatService.reply("hello", "SID-123", null, false))
+                .willReturn(aiMsg);
+
+        // When & Then
+        mockMvc.perform(post("/chat")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("userMessage", "hello")
+                        .param("sessionId", "SID-123")
+                        .param("hasDefaultQuestion", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value("AI 回應"))
+                .andExpect(jsonPath("$.user").value(false))
+                .andExpect(jsonPath("$.sessionId").value("SID-123"));
+
+        verify(plainChatService).reply("hello", "SID-123", null, false);
     }
 }

@@ -5,6 +5,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
+
 
 @RestController
 @RequestMapping("/chat")
@@ -20,7 +22,9 @@ public class ChatController {
     public SseEmitter chatStream(
             @RequestParam("userMessage") String userMessage,
             @RequestParam("sessionId")   String sessionId) {
-
-        return service.replyStream(userMessage, sessionId);
+            @RequestParam("sessionId") String sessionId,
+            @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
+            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
+        return ResponseEntity.ok(service.reply(userMessage, sessionId,conversationCount,hasDefaultQuestion)); //service.replyStream(userMessage, sessionId);
     }
 }
