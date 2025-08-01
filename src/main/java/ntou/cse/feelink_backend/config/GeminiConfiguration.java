@@ -1,5 +1,6 @@
 package ntou.cse.feelink_backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.ChatSession;
@@ -12,10 +13,15 @@ import org.springframework.context.annotation.Configuration;
 public class GeminiConfiguration {
     private static final String INSTRUCTION_FOR_ANALYSIS = "請分析這張繪畫，並以繁體中文說明它可能反映的使用者情緒。從心理學的角度，解釋繪畫中的哪些特徵可能與特定的情緒相關聯。你的回應應該引導使用者思考這些可能的聯繫，鼓勵他們探索自己的內心感受，而不是直接給出情緒標籤。請避免使用過於強烈的斷言，並保持解釋性的語氣，解釋為何推論出，並給予使用者陪伴感。也輪流擔任聆聽者與引導者。不要透漏有先前的情緒預測結果。";
     private static final String INSTRUCTION_FOR_PREDICTION  = "請根據使用者提供的文字或先前的互動，預測使用者接下來可能的心情和感興趣的話題。不要給予關心或回應，做預測即可。";
+    @Value("${GOOGLE_CLOUD_PROJECT_ID}")
+    private String projectId;
+
+    @Value("${GOOGLE_CLOUD_LOCATION}")
+    private String location;
 
     @Bean
     public VertexAI vertexAI() {
-        return new VertexAI("graduate-project-450802","asia-southeast1");
+        return new VertexAI(projectId,location);
     }
 
     @Bean

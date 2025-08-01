@@ -7,6 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -43,5 +45,21 @@ class ChatServiceImplTest {
 
         verify(emotionPredictionChatService, times(1)).processChat(userMessage);
         verify(drawingAnalysisChatService, times(1)).processChat(eq(file), contains("開心"), eq(sessionId));
+    }
+    @Test
+    void testProcessChatStream() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        String userMessage = "畫了彩虹";
+        String sessionId = "session-456";
+        SseEmitter mockEmitter = new SseEmitter();
+
+        when(emotionPredictionChatService.processChat(userMessage)).thenReturn("愉快");
+        when(drawingAnalysisChatService.processChatStream(eq(file), contains("愉快"), eq(sessionId))).thenReturn(mockEmitter);
+
+        SseEmitter result = chatService.processChatStream(file, userMessage, sessionId);
+
+        assertEquals(mockEmitter, result);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(drawingAnalysisChatService).processChatStream(eq(file), contains("愉快"), eq(sessionId));
     }
 }

@@ -33,19 +33,17 @@ public class PlainChatServiceImpl {
         }
         return aiMsg;
     }
-    public SseEmitter replyStream(String userMessage, String sessionId) {
+    public SseEmitter replyStream(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
         ChatSession chatSession = registry.getSession(sessionId);
-
+        String formattedMessage =messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         SseEmitter emitter = new SseEmitter();
 
         new Thread(() -> {
             try {
-                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(userMessage);
+                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(formattedMessage);
                 for (GenerateContentResponse response : responseStream) {
                     String token = ResponseHandler.getText(response);
-                    if (token != null && !token.isEmpty()) {
-                        emitter.send(SseEmitter.event().data(token));
-                    }
+                    emitter.send(SseEmitter.event().data(token));
                 }
                 emitter.complete();
             } catch (Exception e) {

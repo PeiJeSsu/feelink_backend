@@ -21,10 +21,9 @@ public class ChatController {
     @PostMapping( produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
             @RequestParam("userMessage") String userMessage,
-            @RequestParam("sessionId")   String sessionId) {
             @RequestParam("sessionId") String sessionId,
             @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
             @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
-        return ResponseEntity.ok(service.reply(userMessage, sessionId,conversationCount,hasDefaultQuestion)); //service.replyStream(userMessage, sessionId);
+        return service.replyStream(userMessage, sessionId,conversationCount,hasDefaultQuestion);
     }
 }
