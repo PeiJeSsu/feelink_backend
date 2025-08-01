@@ -1,9 +1,9 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
-import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.impl.PlainChatServiceImpl;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
@@ -18,12 +18,12 @@ public class ChatController {
         this.service = service;
     }
 
-    @PostMapping
-    public ResponseEntity<ChatMessage> chat(
+    @PostMapping( produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter chatStream(
             @RequestParam("userMessage") String userMessage,
             @RequestParam("sessionId") String sessionId,
             @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
             @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
-        return ResponseEntity.ok(service.reply(userMessage, sessionId,conversationCount,hasDefaultQuestion));
+        return service.replyStream(userMessage, sessionId,conversationCount,hasDefaultQuestion);
     }
 }

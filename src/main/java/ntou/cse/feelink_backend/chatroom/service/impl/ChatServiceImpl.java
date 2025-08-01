@@ -5,7 +5,7 @@ import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 
 @Service
@@ -13,7 +13,6 @@ public class ChatServiceImpl implements ChatService {
 
     private final DrawingAnalysisChatServiceImpl drawingAnalysisChatService;
     private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
-    private final MessageFormattingService messageFormattingService = new MessageFormattingService();
     @Autowired
     public ChatServiceImpl(
             DrawingAnalysisChatServiceImpl drawingAnalysisChatService,
@@ -36,4 +35,11 @@ public class ChatServiceImpl implements ChatService {
 
         return aiMsg;
     }
+    @Override
+    public SseEmitter processChatStream(MultipartFile file, String userMessage, String sessionId) throws IOException {
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
+        String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
+        return drawingAnalysisChatService.processChatStream(file, analysisPrompt, sessionId);
+    }
 }
+
