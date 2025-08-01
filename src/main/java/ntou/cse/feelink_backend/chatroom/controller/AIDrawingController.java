@@ -55,11 +55,9 @@ public class AIDrawingController {
                     if (removedBgBytes != null) {
                         String removedBgBase64 = Base64.getEncoder().encodeToString(removedBgBytes);
                         geminiResponse.setImageData(removedBgBase64);
-                        geminiResponse.setMessage(geminiResponse.getMessage() );
                     }
                 } catch (Exception bgError) {
                     logger.error("去背處理失敗: {}", bgError.getMessage(), bgError);
-                    geminiResponse.setMessage(geminiResponse.getMessage() );
                 }
             }
             AIDrawingResponse response = new AIDrawingResponse(true, geminiResponse);

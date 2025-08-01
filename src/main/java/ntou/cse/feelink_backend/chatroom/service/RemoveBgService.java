@@ -1,5 +1,7 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
@@ -14,6 +16,8 @@ import java.io.IOException;
 
 @Service
 public class RemoveBgService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RemoveBgService.class);
 
     @Value("${removebg.api.key}")
     private String apiKey;
@@ -31,8 +35,6 @@ public class RemoveBgService {
 
     public Mono<byte[]> removeBackground(MultipartFile file) {
         try {
-            // Removed logging of API key to prevent security risks.
-
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
             builder.part("image_file", file.getBytes())
                     .header("Content-Disposition", "form-data; name=image_file; filename=" + file.getOriginalFilename());
@@ -47,7 +49,7 @@ public class RemoveBgService {
                     .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                             response -> response.bodyToMono(String.class)
                                     .flatMap(errorBody -> {
-                                        System.err.println("API錯誤響應: " + errorBody);
+                                        logger.error("API錯誤響應: {}", errorBody);
                                         return Mono.error(new RuntimeException("API調用失敗: " + response.statusCode() + " - " + errorBody));
                                     }))
                     .bodyToMono(DataBuffer.class)
@@ -57,7 +59,7 @@ public class RemoveBgService {
                         return bytes;
                     })
                     .doOnError(error -> {
-                        System.err.println("RemoveBG API調用失敗: " + error.getMessage());
+                        logger.error("RemoveBG API調用失敗: {}", error.getMessage(), error);
                     });
 
         } catch (IOException e) {
@@ -79,7 +81,7 @@ public class RemoveBgService {
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    System.err.println("API錯誤響應: " + errorBody);
+                                    logger.error("API錯誤響應: {}", errorBody);
                                     return Mono.error(new RuntimeException("API調用失敗: " + response.statusCode() + " - " + errorBody));
                                 }))
                 .bodyToMono(DataBuffer.class)
@@ -89,25 +91,23 @@ public class RemoveBgService {
                     return bytes;
                 })
                 .doOnError(error -> {
-                    System.err.println("RemoveBG API調用失敗: " + error.getMessage());
+                    logger.error("RemoveBG API調用失敗: {}", error.getMessage(), error);
                 });
     }
 
     public Mono<String> testApiKey() {
-        System.out.println("測試API密鑰中...");
-        System.out.println("API密鑰長度: " + apiKey.length());
 
         return webClient.get()
-                .uri("https://api.remove.bg/v1.0/account")
+                .uri(apiUrl)
                 .header("X-Api-Key", apiKey)  // 使用 X-Api-Key
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
                         response -> response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    System.err.println("API密鑰測試失敗: " + errorBody);
+                                    logger.error("API密鑰測試失敗: {}", errorBody);
                                     return Mono.error(new RuntimeException("API密鑰無效: " + response.statusCode()));
                                 }))
                 .bodyToMono(String.class)
-                .doOnSuccess(result -> System.out.println("API密鑰測試成功: " + result));
+                .doOnSuccess(result -> logger.info("API密鑰測試成功: {}", result));
     }
 }
