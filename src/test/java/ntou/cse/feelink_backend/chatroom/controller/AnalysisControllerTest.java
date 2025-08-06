@@ -36,7 +36,6 @@ class AnalysisControllerTest {
     void testAnalyseWithoutFile() throws Exception {
         SseEmitter emitter = new SseEmitter();
 
-        // 使用 processChatStreamWithPersonality 方法，包含 personality 參數
         given(chatService.processChatStreamWithPersonality(isNull(), eq("hi"), eq("S1"), eq("default")))
                 .willReturn(emitter);
 
@@ -55,7 +54,6 @@ class AnalysisControllerTest {
 
         SseEmitter emitter = new SseEmitter();
 
-        // 使用 processChatStreamWithPersonality 方法，包含 personality 參數
         given(chatService.processChatStreamWithPersonality(any(), eq("analyze"), eq("S2"), eq("default")))
                 .willReturn(emitter);
 

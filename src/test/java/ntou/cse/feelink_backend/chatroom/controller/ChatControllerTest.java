@@ -32,7 +32,6 @@ class ChatControllerTest {
     @Test
     void chatStream_shouldReturnEventStream_withAllParameters() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
-        // 注意：這裡要包含所有 5 個參數，包括 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應1\n\n");
             emitter.complete();
@@ -54,7 +53,6 @@ class ChatControllerTest {
     @Test
     void chatStream_shouldReturnEventStream_withOptionalParametersAsNull() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
-        // 包含 personality 參數，預設值是 "default"
         doAnswer(invocation -> {
             emitter.send("data: AI 回應2\n\n");
             emitter.complete();
@@ -74,7 +72,6 @@ class ChatControllerTest {
     @Test
     void chatStream_shouldReturnEventStream_withOnlyConversationCount() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
-        // 包含 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應3\n\n");
             emitter.complete();
@@ -95,7 +92,6 @@ class ChatControllerTest {
     @Test
     void chatStream_shouldReturnEventStream_withOnlyHasDefaultQuestion() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
-        // 包含 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應4\n\n");
             emitter.complete();
