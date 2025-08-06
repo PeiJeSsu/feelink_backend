@@ -22,9 +22,8 @@ public class AnalysisController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter analyse(@RequestPart(value = "file", required = false) MultipartFile file,
                               @RequestParam("userMessage") String userMessage,
-                              @RequestParam("sessionId") String sessionId,
-                              @RequestParam(value = "personality" , defaultValue = "default") String personality) throws IOException {
+                              @RequestParam("sessionId") String sessionId) throws IOException {
 
-        return chatService.processChatStreamWithPersonality(file, userMessage, sessionId,personality);
+        return chatService.processChatStream(file, userMessage, sessionId);
     }
 }

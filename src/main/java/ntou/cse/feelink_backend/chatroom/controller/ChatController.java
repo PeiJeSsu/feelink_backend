@@ -7,6 +7,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
+
 @RestController
 @RequestMapping("/chat")
 public class ChatController {
@@ -17,14 +18,12 @@ public class ChatController {
         this.service = service;
     }
 
-    @PostMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping( produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
             @RequestParam("userMessage") String userMessage,
             @RequestParam("sessionId") String sessionId,
             @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
-            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion,
-            @RequestParam(value = "personality", defaultValue = "default") String personality) throws IOException {
-
-        return service.replyStream(userMessage, sessionId, conversationCount, hasDefaultQuestion, personality);
+            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
+        return service.replyStream(userMessage, sessionId,conversationCount,hasDefaultQuestion);
     }
 }
