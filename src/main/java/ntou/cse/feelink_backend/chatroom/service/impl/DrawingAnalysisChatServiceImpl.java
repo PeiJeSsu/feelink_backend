@@ -64,32 +64,4 @@ public class DrawingAnalysisChatServiceImpl {
         }).start();
         return emitter;
     }
-
-    public SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String sessionId, String personality) throws IOException {
-        ChatSession chatSession = registry.getSession(sessionId, personality);
-        String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");
-        Object processedImage = ChatInputProcessor.processImage(file);
-
-        ResponseStream<GenerateContentResponse> rs;
-        if (processedImage != null) {
-            rs = chatSession.sendMessageStream(
-                    ContentMaker.fromMultiModalData(processedImage, processedText));
-        } else {
-            rs = chatSession.sendMessageStream(processedText);
-        }
-
-        SseEmitter emitter = new SseEmitter();
-        new Thread(() -> {
-            try {
-                for (GenerateContentResponse r : rs) {
-                    String token = ResponseHandler.getText(r);
-                    emitter.send(SseEmitter.event().data(token));
-                }
-                emitter.complete();
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        }).start();
-        return emitter;
-    }
 }

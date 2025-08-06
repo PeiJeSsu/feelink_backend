@@ -9,5 +9,4 @@ import java.io.IOException;
 public interface ChatService {
     ChatMessage processChat(MultipartFile file, String userMessage, String sessionId) throws IOException;
     SseEmitter processChatStream(MultipartFile file, String userMessage, String sessionId) throws IOException;
-    SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String sessionId, String personality) throws IOException;
 }

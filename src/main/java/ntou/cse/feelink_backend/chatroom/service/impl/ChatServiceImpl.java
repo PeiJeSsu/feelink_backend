@@ -35,19 +35,11 @@ public class ChatServiceImpl implements ChatService {
 
         return aiMsg;
     }
-
     @Override
     public SseEmitter processChatStream(MultipartFile file, String userMessage, String sessionId) throws IOException {
         String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
         String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         return drawingAnalysisChatService.processChatStream(file, analysisPrompt, sessionId);
-    }
-
-    @Override
-    public SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String sessionId, String personality) throws IOException {
-        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
-        String analysisPrompt = userMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
-        return drawingAnalysisChatService.processChatStreamWithPersonality(file, analysisPrompt, sessionId, personality);
     }
 }
 
