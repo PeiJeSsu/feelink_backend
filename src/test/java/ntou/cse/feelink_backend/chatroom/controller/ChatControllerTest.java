@@ -32,11 +32,12 @@ class ChatControllerTest {
     @Test
     void chatStream_shouldReturnEventStream_withAllParameters() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
+        // 注意：這裡要包含所有 5 個參數，包括 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應1\n\n");
             emitter.complete();
             return emitter;
-        }).when(plainChatService).replyStream("hello", "SID-123", 1, true);
+        }).when(plainChatService).replyStream("hello", "SID-123", 1, true, "default");
 
         mockMvc.perform(post("/chat")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -46,17 +47,19 @@ class ChatControllerTest {
                         .param("hasDefaultQuestion", "true"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
-        verify(plainChatService).replyStream("hello", "SID-123", 1, true);
+
+        verify(plainChatService).replyStream("hello", "SID-123", 1, true, "default");
     }
 
     @Test
     void chatStream_shouldReturnEventStream_withOptionalParametersAsNull() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
+        // 包含 personality 參數，預設值是 "default"
         doAnswer(invocation -> {
             emitter.send("data: AI 回應2\n\n");
             emitter.complete();
             return emitter;
-        }).when(plainChatService).replyStream("hello", "SID-123", null, null);
+        }).when(plainChatService).replyStream("hello", "SID-123", null, null, "default");
 
         mockMvc.perform(post("/chat")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -65,17 +68,18 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
 
-        verify(plainChatService).replyStream("hello", "SID-123", null, null);
+        verify(plainChatService).replyStream("hello", "SID-123", null, null, "default");
     }
 
     @Test
     void chatStream_shouldReturnEventStream_withOnlyConversationCount() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
+        // 包含 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應3\n\n");
             emitter.complete();
             return emitter;
-        }).when(plainChatService).replyStream("hello", "SID-123", 5, null);
+        }).when(plainChatService).replyStream("hello", "SID-123", 5, null, "default");
 
         mockMvc.perform(post("/chat")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -85,17 +89,18 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
 
-        verify(plainChatService).replyStream("hello", "SID-123", 5, null);
+        verify(plainChatService).replyStream("hello", "SID-123", 5, null, "default");
     }
 
     @Test
     void chatStream_shouldReturnEventStream_withOnlyHasDefaultQuestion() throws Exception {
         SseEmitter emitter = new SseEmitter(0L);
+        // 包含 personality 參數
         doAnswer(invocation -> {
             emitter.send("data: AI 回應4\n\n");
             emitter.complete();
             return emitter;
-        }).when(plainChatService).replyStream("hello", "SID-123", null, false);
+        }).when(plainChatService).replyStream("hello", "SID-123", null, false, "default");
 
         mockMvc.perform(post("/chat")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -105,7 +110,26 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
 
-        verify(plainChatService).replyStream("hello", "SID-123", null, false);
+        verify(plainChatService).replyStream("hello", "SID-123", null, false, "default");
     }
 
+    @Test
+    void chatStream_shouldReturnEventStream_withCustomPersonality() throws Exception {
+        SseEmitter emitter = new SseEmitter(0L);
+        doAnswer(invocation -> {
+            emitter.send("data: AI 回應5\n\n");
+            emitter.complete();
+            return emitter;
+        }).when(plainChatService).replyStream("hello", "SID-123", null, null, "creative");
+
+        mockMvc.perform(post("/chat")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("userMessage", "hello")
+                        .param("sessionId", "SID-123")
+                        .param("personality", "creative"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM));
+
+        verify(plainChatService).replyStream("hello", "SID-123", null, null, "creative");
+    }
 }

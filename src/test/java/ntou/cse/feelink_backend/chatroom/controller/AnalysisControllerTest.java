@@ -36,13 +36,11 @@ class AnalysisControllerTest {
     void testAnalyseWithoutFile() throws Exception {
         SseEmitter emitter = new SseEmitter();
 
-        given(chatService.processChatStream(any(), eq("hi"), eq("S1")))
+        // 使用 processChatStreamWithPersonality 方法，包含 personality 參數
+        given(chatService.processChatStreamWithPersonality(isNull(), eq("hi"), eq("S1"), eq("default")))
                 .willReturn(emitter);
 
-        MockMultipartFile emptyFile = new MockMultipartFile("file", "", "application/octet-stream", new byte[0]);
-
         mockMvc.perform(multipart("/analysis")
-                        .file(emptyFile)
                         .param("userMessage", "hi")
                         .param("sessionId", "S1"))
                 .andExpect(status().isOk());
@@ -57,13 +55,34 @@ class AnalysisControllerTest {
 
         SseEmitter emitter = new SseEmitter();
 
-        given(chatService.processChatStream(any(), eq("analyze"), eq("S2")))
+        // 使用 processChatStreamWithPersonality 方法，包含 personality 參數
+        given(chatService.processChatStreamWithPersonality(any(), eq("analyze"), eq("S2"), eq("default")))
                 .willReturn(emitter);
 
         mockMvc.perform(multipart("/analysis")
                         .file(file)
                         .param("userMessage", "analyze")
                         .param("sessionId", "S2"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testAnalyseWithCustomPersonality() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[]{1, 2, 3});
+
+        SseEmitter emitter = new SseEmitter();
+
+        given(chatService.processChatStreamWithPersonality(any(), eq("analyze"), eq("S3"), eq("creative")))
+                .willReturn(emitter);
+
+        mockMvc.perform(multipart("/analysis")
+                        .file(file)
+                        .param("userMessage", "analyze")
+                        .param("sessionId", "S3")
+                        .param("personality", "creative"))
                 .andExpect(status().isOk());
     }
 }
