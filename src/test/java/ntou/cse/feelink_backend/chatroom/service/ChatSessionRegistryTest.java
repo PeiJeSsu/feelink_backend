@@ -12,12 +12,21 @@ import static org.mockito.Mockito.*;
 
 class ChatSessionRegistryTest {
 
-    @Mock  GenerativeModel model;
+    @Mock GenerativeModel drawingAnalysisModel;
+    @Mock GenerativeModel creativeModel;
+    @Mock GenerativeModel curiousAnalystModel;
+    @Mock GenerativeModel warmMentorModel;
+
     private ChatSessionRegistry registry;
     @BeforeEach
     void init() {
         MockitoAnnotations.openMocks(this);
-        registry = new ChatSessionRegistry(model);
+        registry = new ChatSessionRegistry(
+                drawingAnalysisModel,
+                creativeModel,
+                curiousAnalystModel,
+                warmMentorModel
+        );
     }
     @Test
     void firstCall_createsNewSession() {
