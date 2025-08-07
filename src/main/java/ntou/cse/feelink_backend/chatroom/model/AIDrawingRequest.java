@@ -12,6 +12,8 @@ public class AIDrawingRequest {
     @JsonProperty("removeBackground")
     private boolean removeBackground = false;
 
+    private String mode = "drawing";
+
     public AIDrawingRequest() {}
 
     public AIDrawingRequest(String text, String imageData) {
@@ -50,12 +52,21 @@ public class AIDrawingRequest {
         this.removeBackground = removeBackground;
     }
 
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
+    }
+
     @Override
     public String toString() {
         return "AIDrawingRequest{" +
                 "text='" + text + '\'' +
                 ", imageData='" + (imageData != null ? "..." : "null") + '\'' +
                 ", removeBackground=" + removeBackground +
+                ", mode='" + mode + '\'' +
                 '}';
     }
 }
