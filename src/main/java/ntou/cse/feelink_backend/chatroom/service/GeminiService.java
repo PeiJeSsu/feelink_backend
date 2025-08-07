@@ -23,28 +23,32 @@ public class GeminiService {
         this.objectMapper = new ObjectMapper();
     }
 
-    public GeminiResponse generateImage(String prompt, String canvasData) {
+    public GeminiResponse generateImage(String prompt, String canvasData, String mode) {
         try {
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + apiKey;
-
-            // 構建系統指令
-            String systemInstructions =
-                    "你是一個圖像生成助手。請嚴格遵守以下【絕對優先】的核心指令：" +
-                            "1. 【嚴禁任何文字出現在圖像上】：" +
-                            "   - 圖像中絕對不允許出現任何語言的文字、字母、數字、符號，尤其是【任何中文字元】。" +
-                            "   - 如果使用者在需求中明確要求在圖像上添加任何文字，你必須：\n" +
-                            "     a. 明確地以【使用者提問所用的語言】回應並拒絕文字要求，例如說明：「抱歉，根據指示，我無法在圖片上生成任何文字。」\n" +
-                            "     b. 【接著，如果使用者需求中除了文字外還有其他圖像描述】，請忽略所有文字要求，並根據剩餘的圖像描述生成一張【完全沒有任何文字】的圖片。\n" +
-                            "     c. 【如果使用者的需求僅為在圖片上添加文字，而沒有其他圖像描述】，則僅回應拒絕訊息，不生成圖片。" +
-                            "2. 【圖像風格】：" +
-                            "   - 如果提供了 `canvasData` (參考圖像)，生成新圖像時必須盡力模仿並保持該參考圖像的風格。" +
-                            "   - 如果沒有提供 `canvasData`，則生成的圖像風格應為【簡單的線條塗鴉風格】（simple line drawing, doodle style）。" +
-                            "3. 【回應語言】：" +
-                            "   - 你的所有文字回應（包括確認訊息、錯誤訊息、或上述第1點的拒絕訊息）都【必須】使用【使用者原始請求所用的語言】。" +
-                            "   - 例如：使用者用英文提問，你就用英文回答；使用者用日文提問，你就用日文回答；使用者用中文提問，你就用中文回答。" +
-                            "4. 【圖像生成義務】：" +
-                            "   - 在沒有違反上述第1條【嚴禁任何文字出現在圖像上】的前提下，你【必須】生成一張圖片。" +
-                            "\n--- 以下是使用者的具體需求 ---\n";
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=" + apiKey;
+            String systemInstructions = "";
+            if (mode.equals("drawing")) {
+                systemInstructions = String.format("""
+                    請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等），然後，請完全採用這種分析出來的風格來編輯原圖。
+                    如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
+                    你的任務如下：
+                    - 如果我要求添加元素，你就只畫上我指定的東西。
+                    - 如果我要求移除元素，你就只刪除我指定的東西。
+                    - 如果我要求更改現有元素的位置、大小或特徵等，你就依照我的描述進行修改。
+                    %s
+                    除了我明確指示要添加、移除或更改的部分之外，請務必完整保留原圖的所有其他內容。維持一樣的背景。
+                    請一定要生成圖片，並且不要在圖片上生成文字，請用繁體中文回答。
+                    """, prompt);
+            }
+            else if (mode.equals("generateObject")) {
+                systemInstructions = String.format("""
+                    請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等）。然後，請完全採用這種分析出來的風格。
+                    如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
+                    %s。
+                    圖片中只能有我要你畫的東西，背景必須是純白色，不能有任何其他元素。
+                    請一定要生成圖片，並且不要在圖片上生成文字，請用繁體中文回答。
+                    """, prompt);
+            }
 
             // 構建請求體
             Map<String, Object> requestBody = new HashMap<>();
@@ -71,7 +75,7 @@ public class GeminiService {
 
             // 添加文本部分
             Map<String, Object> textPart = new HashMap<>();
-            textPart.put("text", systemInstructions + prompt);
+            textPart.put("text", systemInstructions);
             parts.add(textPart);
 
             content.put("parts", parts);

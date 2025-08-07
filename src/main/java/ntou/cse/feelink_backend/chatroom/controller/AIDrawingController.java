@@ -32,12 +32,13 @@ public class AIDrawingController {
             String prompt = request.getText();
             String canvasData = request.getImageData();
             boolean removeBackground = request.isRemoveBackground();
+            String mode = request.getMode();
             
             if (prompt == null || prompt.trim().isEmpty()) {
                 prompt = "請根據這張圖片生成新的內容";
             }
 
-            GeminiResponse geminiResponse = geminiService.generateImage(prompt, canvasData);
+            GeminiResponse geminiResponse = geminiService.generateImage(prompt, canvasData, mode);
 
             if (removeBackground && geminiResponse.isSuccess() && geminiResponse.getImageData() != null) {
                 return processWithBackgroundRemoval(geminiResponse);
