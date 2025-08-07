@@ -27,7 +27,7 @@ public class GeminiService {
         try {
             String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=" + apiKey;
             String systemInstructions = "";
-            if (mode.equals("drawing")) {
+            if ("drawing".equals(mode)) {
                 systemInstructions = String.format("""
                     請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等），然後，請完全採用這種分析出來的風格來編輯原圖。
                     如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
@@ -40,7 +40,7 @@ public class GeminiService {
                     請一定要生成圖片，並且不要在圖片上生成文字，請用繁體中文回答。
                     """, prompt);
             }
-            else if (mode.equals("generateObject")) {
+            else if ("generateObject".equals(mode)) {
                 systemInstructions = String.format("""
                     請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等）。然後，請完全採用這種分析出來的風格。
                     如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
