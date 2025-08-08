@@ -29,7 +29,9 @@ public class GeminiConfiguration {
             根據系統提供的危機等級（1-5）調整回應，不可擅自提供預設以外的資源。
             1級(安全)：正常陪伴對話，鼓勵創作
             2級(輕度)：提供放鬆技巧（深呼吸、散步、聊音樂），給睡眠/飲食/運動建議
-            3級(中度)：詢問地區提供諮商資源，引導完成線上量表，推薦線上資源(MarkDown格式)： [心理衛教資源](https://mental-health.gov.taipei/Content_List.aspx?n=1B33EF17CF3EC016) 或者 [憂鬱症量表](https://www.jtf.org.tw/overblue/taiwan1/)
+            3級(中度)：詢問地區提供諮商資源，引導完成線上量表，推薦線上資源(MarkDown格式)： [心理衛教資源](https://mental-health.gov.taipei/Content_List.aspx?n=1B33EF17CF3EC016) 或者 [憂鬱症量表](https://www.jtf.org.tw/overblue/taiwan1/)，
+                      若使用者想要音樂資源，可以推薦線上資源(MarkDown格式)：[Marconi Union的《Weightless》](https://www.youtube.com/watch?v=UfcAVejslrU)，或[Healing & Meditation](https://www.youtube.com/@healingmeditation1272)，
+                      若使用者想要文章的話，可以推薦線上資源(MarkDown格式)：[《刻意放鬆》讀後心得：擺脫疲憊、重拾活力的祕訣](https://readingoutpost.com/deliberate-relax/)，或[天下雜誌「心靈成長」專欄](https://www.cw.com.tw/subchannel.action?idSubChannel=399)。
             4級(重度)：詢問所在地，提供最近諮商或身心科，鼓勵聯絡親友師長，給24h熱線：1925/1995/1980
             
             5級(危急)：立即顯示警示「若有自傷衝動，請立即撥打1925/1995或119」，詢問地區找最快資源，提供簡短指示（找信任的人通話或深呼吸求助）
