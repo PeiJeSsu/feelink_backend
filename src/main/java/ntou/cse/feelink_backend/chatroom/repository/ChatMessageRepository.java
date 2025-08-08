@@ -12,18 +12,50 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
     List<ChatMessage> findByChatroomIdOrderBySentAtAsc(String chatroomId);
     void deleteByChatroomId(String chatroomId);
 
-    // 新增：根據 isUser 查詢的方法
+    // 根據 isUser 查詢的方法
     List<ChatMessage> findByChatroomIdAndIsUserOrderBySentAtAsc(String chatroomId, Boolean isUser);
 
-    // 新增：只取得使用者訊息
+    // 只取得使用者訊息
     List<ChatMessage> findByChatroomIdAndIsUserTrueOrderBySentAtAsc(String chatroomId);
 
-    // 新增：只取得AI訊息
+    // 只取得AI訊息
     List<ChatMessage> findByChatroomIdAndIsUserFalseOrderBySentAtAsc(String chatroomId);
 
-    // 新增：統計使用者訊息數量
-    long countByChatroomIdAndIsUserTrue(String chatroomId);
+    // 🎯 新增：根據 isDrawingData 查詢的方法
+    List<ChatMessage> findByChatroomIdAndIsDrawingDataOrderBySentAtAsc(String chatroomId, Boolean isDrawingData);
 
-    // 新增：統計AI訊息數量
+    // 🎯 新增：只取得文字訊息（非畫布資料）
+    List<ChatMessage> findByChatroomIdAndIsDrawingDataFalseOrderBySentAtAsc(String chatroomId);
+
+    // 🎯 新增：只取得畫布資料
+    List<ChatMessage> findByChatroomIdAndIsDrawingDataTrueOrderBySentAtAsc(String chatroomId);
+
+    // 🎯 新增：複合查詢 - 使用者的畫布資料
+    List<ChatMessage> findByChatroomIdAndIsUserTrueAndIsDrawingDataTrueOrderBySentAtAsc(String chatroomId);
+
+    // 🎯 新增：複合查詢 - AI的畫布資料
+    List<ChatMessage> findByChatroomIdAndIsUserFalseAndIsDrawingDataTrueOrderBySentAtAsc(String chatroomId);
+
+    // 🎯 新增：複合查詢 - 使用者的文字訊息
+    List<ChatMessage> findByChatroomIdAndIsUserTrueAndIsDrawingDataFalseOrderBySentAtAsc(String chatroomId);
+
+    // 🎯 新增：複合查詢 - AI的文字訊息
+    List<ChatMessage> findByChatroomIdAndIsUserFalseAndIsDrawingDataFalseOrderBySentAtAsc(String chatroomId);
+
+    // 統計方法
+    long countByChatroomId(String chatroomId);
+    long countByChatroomIdAndIsUserTrue(String chatroomId);
     long countByChatroomIdAndIsUserFalse(String chatroomId);
+
+    // 🎯 新增：統計畫布資料數量
+    long countByChatroomIdAndIsDrawingDataTrue(String chatroomId);
+
+    // 🎯 新增：統計文字訊息數量
+    long countByChatroomIdAndIsDrawingDataFalse(String chatroomId);
+
+    // 🎯 新增：刪除方法 - 根據條件刪除
+    void deleteByChatroomIdAndIsUserTrue(String chatroomId);
+    void deleteByChatroomIdAndIsUserFalse(String chatroomId);
+    void deleteByChatroomIdAndIsDrawingDataTrue(String chatroomId);
+    void deleteByChatroomIdAndIsDrawingDataFalse(String chatroomId);
 }
