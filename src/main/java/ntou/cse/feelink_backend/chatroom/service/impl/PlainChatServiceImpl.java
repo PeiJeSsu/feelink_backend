@@ -9,13 +9,16 @@ import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
+import java.io.IOException;
 @Service
 public class PlainChatServiceImpl {
 
     private final ChatSessionRegistry registry;
     private final MessageFormattingService messageFormattingService = new MessageFormattingService();
-    public PlainChatServiceImpl(ChatSessionRegistry registry) {
+    private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
+    public PlainChatServiceImpl(ChatSessionRegistry registry, EmotionPredictionChatServiceImpl emotionPredictionChatService) {
         this.registry = registry;
+        this.emotionPredictionChatService = emotionPredictionChatService;
     }
 
     public ChatMessage reply(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
@@ -54,14 +57,16 @@ public class PlainChatServiceImpl {
         return emitter;
     }
 
-    public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion, String personality) {
+    public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion, String personality) throws IOException {
         ChatSession chatSession = registry.getSession(sessionId, personality);
+        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         SseEmitter emitter = new SseEmitter();
 
         new Thread(() -> {
             try {
-                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(formattedMessage);
+                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(analysisPrompt);
                 for (GenerateContentResponse response : responseStream) {
                     String token = ResponseHandler.getText(response);
                     emitter.send(SseEmitter.event().data(token));
