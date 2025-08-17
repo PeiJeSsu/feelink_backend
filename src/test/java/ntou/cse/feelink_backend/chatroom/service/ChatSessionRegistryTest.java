@@ -21,6 +21,10 @@ class ChatSessionRegistryTest {
     @BeforeEach
     void init() {
         MockitoAnnotations.openMocks(this);
+        when(drawingAnalysisModel.startChat()).thenReturn(mock(ChatSession.class));
+        when(creativeModel.startChat()).thenReturn(mock(ChatSession.class));
+        when(curiousAnalystModel.startChat()).thenReturn(mock(ChatSession.class));
+        when(warmMentorModel.startChat()).thenReturn(mock(ChatSession.class));
         registry = new ChatSessionRegistry(
                 drawingAnalysisModel,
                 creativeModel,
@@ -58,5 +62,32 @@ class ChatSessionRegistryTest {
         } catch (Exception e) { fail(e); }
         ChatSession result = registry.getSession(id);
         assertSame(preset, result);
+    }
+    @Test
+    void getSession_withCreativePersonality() {
+        String sessionId = "SID-C";
+        String personality = "creative";
+        when(creativeModel.startChat()).thenReturn(mock(ChatSession.class));
+        ChatSession session = registry.getSession(sessionId, personality);
+        assertNotNull(session);
+    }
+
+    @Test
+    void getSession_withCuriousPersonality() {
+        String sessionId = "SID-D";
+        String personality = "curious";
+        when(curiousAnalystModel.startChat()).thenReturn(mock(ChatSession.class));
+        ChatSession session = registry.getSession(sessionId, personality);
+        assertNotNull(session);
+
+    }
+
+    @Test
+    void getSession_withWarmPersonality() {
+        String sessionId = "SID-E";
+        String personality = "warm";
+        when(warmMentorModel.startChat()).thenReturn(mock(ChatSession.class));
+        ChatSession session = registry.getSession(sessionId, personality);
+        assertNotNull(session);
     }
 }

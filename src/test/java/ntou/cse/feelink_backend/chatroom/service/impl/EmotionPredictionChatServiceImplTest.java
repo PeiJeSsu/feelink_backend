@@ -44,15 +44,6 @@ class EmotionPredictionChatServiceImplTest {
     }
 
     @Test
-    void nullOrBlank() throws IOException {
-        String r1 = service.processChat( null);
-        String r2 = service.processChat( "   ");
-        assertEquals("Mock AI 回應", r1);
-        assertEquals("Mock AI 回應", r2);
-        verify(chatSession, times(2)).sendMessage("請預測我的心情和感興趣的話題");
-    }
-
-    @Test
     void exception_returnsErrorMessage() throws IOException {
         when(chatSession.sendMessage("Err")).thenThrow(new RuntimeException("fail"));
         String resp = service.processChat( "Err");

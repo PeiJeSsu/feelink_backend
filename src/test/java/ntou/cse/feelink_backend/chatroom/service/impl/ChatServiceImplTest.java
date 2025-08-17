@@ -62,4 +62,22 @@ class ChatServiceImplTest {
         verify(emotionPredictionChatService).processChat(userMessage);
         verify(drawingAnalysisChatService).processChatStream(eq(file), contains("愉快"), eq(sessionId));
     }
+    @Test
+    void testProcessChatStreamWithPersonality() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        String userMessage = "畫了彩虹";
+        String sessionId = "session-456";
+        String personality = "CREATIVE";
+        SseEmitter mockEmitter = new SseEmitter();
+
+        when(emotionPredictionChatService.processChat(userMessage)).thenReturn("愉快");
+        when(drawingAnalysisChatService.processChatStreamWithPersonality(eq(file), contains("愉快"), eq(sessionId), eq(personality))).thenReturn(mockEmitter);
+
+        SseEmitter result = chatService.processChatStreamWithPersonality(file, userMessage, sessionId, personality);
+
+        assertEquals(mockEmitter, result);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(drawingAnalysisChatService).processChatStreamWithPersonality(eq(file), contains("愉快"), eq(sessionId), eq(personality));
+    }
+
 }
