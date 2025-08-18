@@ -34,10 +34,12 @@ class DrawingAnalysisChatServiceImplTest {
     ChatSessionRegistry registry;
     @InjectMocks private DrawingAnalysisChatServiceImpl service;
     private static final String SESSION_ID  = "1";
+    private static final String PERSONALITY = "CREATIVE";
     @BeforeEach
     void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
         when(registry.getSession(anyString())).thenReturn(chatSession);
+        when(registry.getSession(anyString(), anyString())).thenReturn(chatSession);
         when(mockResponse.toString()).thenReturn("Mock AI 回應");
         Candidate cand = mock(Candidate.class);
         Content content = mock(Content.class);
@@ -187,5 +189,103 @@ class DrawingAnalysisChatServiceImplTest {
         when(response.getCandidatesCount()).thenReturn(1);
         when(response.getCandidates(0)).thenReturn(candidate);
         return response;
+    }
+
+    @Test
+    void processChatStream_exception() throws Exception {
+        when(mockResponseStream.iterator()).thenThrow(new RuntimeException("Stream processing failed"));
+        SseEmitter emitter = service.processChatStream(null, "Hello", SESSION_ID);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID);
+        Thread.sleep(200);
+        verify(chatSession).sendMessageStream("Hello");
+    }
+    @Test
+    void processChatStreamWithPersonality_withText() throws Exception {
+        GenerateContentResponse response = createMockResponse("Stream Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        SseEmitter emitter = service.processChatStreamWithPersonality(null, "Hello", SESSION_ID, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream("Hello");
+    }
+
+    @Test
+    void processChatStreamWithPersonality_nullText() throws Exception {
+        GenerateContentResponse response = createMockResponse("Stream Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        SseEmitter emitter = service.processChatStreamWithPersonality(null, null, SESSION_ID, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream("請分析這張圖片");
+    }
+
+    @Test
+    void processChatStreamWithPersonality_emptyText() throws Exception {
+        GenerateContentResponse response = createMockResponse("Stream Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        SseEmitter emitter = service.processChatStreamWithPersonality(null, "   ", SESSION_ID, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream("請分析這張圖片");
+    }
+
+    @Test
+    void processChatStreamWithPersonality_withImage() throws Exception {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getContentType()).thenReturn("image/jpeg");
+        byte[] bytes = "data".getBytes();
+        when(file.getBytes()).thenReturn(bytes);
+        Part mockPart = mock(Part.class);
+        Content multimodal = mock(Content.class);
+        GenerateContentResponse response = createMockResponse("Image Analysis");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        try (var pm = mockStatic(com.google.cloud.vertexai.generativeai.PartMaker.class);
+             var cm = mockStatic(ContentMaker.class)) {
+            pm.when(() -> com.google.cloud.vertexai.generativeai.PartMaker.fromMimeTypeAndData("image/jpeg", bytes))
+                    .thenReturn(mockPart);
+            cm.when(() -> ContentMaker.fromMultiModalData(mockPart, "請分析這張圖片"))
+                    .thenReturn(multimodal);
+
+            SseEmitter emitter = service.processChatStreamWithPersonality(file, "", SESSION_ID, PERSONALITY);
+            assertNotNull(emitter);
+            verify(registry).getSession(SESSION_ID, PERSONALITY);
+            Thread.sleep(100);
+            verify(chatSession).sendMessageStream(multimodal);
+        }
+    }
+
+    @Test
+    void processChatStreamWithPersonality_emptyFile() throws Exception {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(true);
+        GenerateContentResponse response = createMockResponse("Text Only Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+        SseEmitter emitter = service.processChatStreamWithPersonality(file, "只有空檔案", SESSION_ID, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream("只有空檔案");
+    }
+
+    @Test
+    void processChatStreamWithPersonality_exception() throws Exception {
+        when(mockResponseStream.iterator()).thenThrow(new RuntimeException("Stream processing failed"));
+        SseEmitter emitter = service.processChatStreamWithPersonality(null, "Hello", SESSION_ID, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(200);
+        verify(chatSession).sendMessageStream("Hello");
     }
 }

@@ -14,11 +14,12 @@ import java.io.IOException;
 public class PlainChatServiceImpl {
 
     private final ChatSessionRegistry registry;
-    private final MessageFormattingService messageFormattingService = new MessageFormattingService();
+    private final MessageFormattingService messageFormattingService;
     private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
-    public PlainChatServiceImpl(ChatSessionRegistry registry, EmotionPredictionChatServiceImpl emotionPredictionChatService) {
+    public PlainChatServiceImpl(ChatSessionRegistry registry, EmotionPredictionChatServiceImpl emotionPredictionChatService, MessageFormattingService messageFormattingService) {
         this.registry = registry;
         this.emotionPredictionChatService = emotionPredictionChatService;
+        this.messageFormattingService = messageFormattingService;
     }
 
     public ChatMessage reply(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
@@ -59,7 +60,12 @@ public class PlainChatServiceImpl {
 
     public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion, String personality) throws IOException {
         ChatSession chatSession = registry.getSession(sessionId, personality);
-        String emotionPrediction = emotionPredictionChatService.processChat(userMessage);
+        String emotionPrediction;
+        try {
+            emotionPrediction = emotionPredictionChatService.processChat(userMessage);
+        } catch (Exception e) {
+            emotionPrediction = "AI處理情緒預測錯誤";
+        }
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
         SseEmitter emitter = new SseEmitter();

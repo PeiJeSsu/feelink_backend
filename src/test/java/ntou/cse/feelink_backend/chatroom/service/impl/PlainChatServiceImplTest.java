@@ -8,6 +8,7 @@ import com.google.cloud.vertexai.generativeai.ChatSession;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
+import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -27,13 +28,18 @@ class PlainChatServiceImplTest {
     @Mock private GenerateContentResponse mockResponse;
     @Mock private ResponseStream<GenerateContentResponse> mockResponseStream;
     @Mock private ChatSessionRegistry registry;
+    @Mock private EmotionPredictionChatServiceImpl emotionPredictionChatService;
+    @Mock private MessageFormattingService messageFormattingService;
     @InjectMocks private PlainChatServiceImpl service;
     private static final String SESSION_ID = "1";
-
+    private static final String PERSONALITY = "CREATIVE";
     @BeforeEach
     void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
         when(registry.getSession(anyString())).thenReturn(chatSession);
+        when(registry.getSession(anyString(), anyString())).thenReturn(chatSession);
+        when(emotionPredictionChatService.processChat(anyString())).thenReturn("1");
+        when(messageFormattingService.getFullMessage(anyString(), any(), any())).thenReturn("格式化訊息");
         Candidate cand = mock(Candidate.class);
         Content content = mock(Content.class);
         Part part = mock(Part.class);
@@ -200,5 +206,123 @@ class PlainChatServiceImplTest {
         when(response.getCandidatesCount()).thenReturn(1);
         when(response.getCandidates(0)).thenReturn(candidate);
         return response;
+    }
+
+    @Test
+    void replyStreamWithPersonality_withAllParameters() throws Exception {
+        String userMessage = "Hello";
+        Integer conversationCount = 1;
+        Boolean hasDefaultQuestion = true;
+        GenerateContentResponse response1 = createMockResponse("Token1");
+        GenerateContentResponse response2 = createMockResponse("Token2");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response1, response2).iterator());
+
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, conversationCount, hasDefaultQuestion, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream(anyString());
+    }
+
+    @Test
+    void replyStreamWithPersonality_withNullOptionalParameters() throws Exception {
+        String userMessage = "Hello";
+        GenerateContentResponse response = createMockResponse("Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, null, null, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, null, null);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream(anyString());
+    }
+
+    @Test
+    void replyStreamWithPersonality_withOnlyConversationCount() throws Exception {
+        String userMessage = "Hello";
+        Integer conversationCount = 5;
+        GenerateContentResponse response = createMockResponse("Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, conversationCount, null, PERSONALITY);
+
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, conversationCount, null);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream(anyString());
+    }
+
+    @Test
+    void replyStreamWithPersonality_withOnlyHasDefaultQuestion() throws Exception {
+        String userMessage = "Hello";
+        Boolean hasDefaultQuestion = false;
+        GenerateContentResponse response = createMockResponse("Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, null, hasDefaultQuestion, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, null, hasDefaultQuestion);
+        Thread.sleep(100);
+        verify(chatSession).sendMessageStream(anyString());
+    }
+
+    @Test
+    void replyStreamWithPersonality_whenEmotionPredictionThrows() throws Exception {
+        String userMessage = "Error message";
+        when(emotionPredictionChatService.processChat(anyString()))
+                .thenThrow(new RuntimeException("Emotion prediction failed"));
+        GenerateContentResponse response = createMockResponse("Response");
+        when(mockResponseStream.iterator()).thenReturn(Arrays.asList(response).iterator());
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, null, null, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        Thread.sleep(100);
+    }
+
+    @Test
+    void replyStreamWithPersonality_whenMessageFormattingThrows() throws Exception {
+        String userMessage = "Error message";
+        when(messageFormattingService.getFullMessage(anyString(), any(), any())).thenThrow(new RuntimeException("Message formatting failed"));
+        assertThrows(RuntimeException.class, () -> {
+            service.replyStream(userMessage, SESSION_ID, null, null, PERSONALITY);
+        });
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, null, null);
+    }
+
+    @Test
+    void replyStreamWithPersonality_whenSendMessageStreamThrows() throws Exception {
+        String userMessage = "Error message";
+        when(chatSession.sendMessageStream(anyString())).thenThrow(new RuntimeException("Stream error"));
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, null, null, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, null, null);
+        Thread.sleep(200);
+        verify(chatSession).sendMessageStream(anyString());
+    }
+
+    @Test
+    void replyStreamWithPersonality_streamIteratorException() throws Exception {
+        String userMessage = "Hello";
+        when(mockResponseStream.iterator()).thenThrow(new RuntimeException("Stream iteration failed"));
+        SseEmitter emitter = service.replyStream(userMessage, SESSION_ID, null, null, PERSONALITY);
+        assertNotNull(emitter);
+        verify(registry).getSession(SESSION_ID, PERSONALITY);
+        verify(emotionPredictionChatService).processChat(userMessage);
+        verify(messageFormattingService).getFullMessage(userMessage, null, null);
+        Thread.sleep(300);
+        verify(chatSession).sendMessageStream(anyString());
     }
 }

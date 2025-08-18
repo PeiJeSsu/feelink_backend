@@ -26,7 +26,7 @@ public class GeminiConfiguration {
     private static final String INSTRUCTION_FOR_PREDICTION  = "你是情緒預測師，根據使用者最近的對話內容，判斷其情緒觸發等級。\n" + Rubric +
             "\n分析使用者的對話內容，判斷屬於哪一級（1-5），回傳數字即可。同時命中多級，取最高級。";
     private static final String AVOID = """
-            根據系統提供的危機等級（1-5）調整回應，不可擅自提供預設以外的資源。
+            根據系統提供的危機等級（1-5）調整回應，不可擅自提供預設以外的資源，一定要遵從給予方式。
             1級(安全)：正常陪伴對話，鼓勵創作
             2級(輕度)：提供放鬆技巧（深呼吸、散步、聊音樂），給睡眠/飲食/運動建議
             3級(中度)：詢問地區提供諮商資源，引導完成線上量表，推薦線上資源(MarkDown格式)： [心理衛教資源](https://mental-health.gov.taipei/Content_List.aspx?n=1B33EF17CF3EC016) 或者 [憂鬱症量表](https://www.jtf.org.tw/overblue/taiwan1/)，
@@ -35,7 +35,7 @@ public class GeminiConfiguration {
             4級(重度)：詢問所在地，提供最近諮商或身心科，鼓勵聯絡親友師長，給24h熱線：1925/1995/1980
             
             5級(危急)：立即顯示警示「若有自傷衝動，請立即撥打1925/1995或119」，詢問地區找最快資源，提供簡短指示（找信任的人通話或深呼吸求助）
-            請自然融入回應，不要直接說出等級數字，不要一直提供線上資源，使用者回應五次後才可再次提供。
+            請自然融入回應，資源之間不要連在一起給，用逗號隔開，不要說出等級數字，不要一直提供線上資源，使用者回應五次後才可再次提供。
             """;
     private static final String CREATIVE_INSTRUCTION =
             """
