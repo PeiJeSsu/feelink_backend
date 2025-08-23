@@ -1,6 +1,5 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
-
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

@@ -1,9 +1,8 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.genai.Chat;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.GenerateContentResponse;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import org.springframework.stereotype.Service;
@@ -22,24 +21,42 @@ public class PlainChatServiceImpl {
         this.messageFormattingService = messageFormattingService;
     }
 
-    public ChatMessage reply(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
-        ChatSession chatSession = registry.getSession(sessionId);
-        String formattedMessage =messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+    public ChatMessage reply(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) {
+        System.out.println("開始處理請求: " + userMessage + ", sessionId: " + sessionId);
+
+        Chat chatSession = registry.getSession(sessionId);
+        String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        System.out.println("格式化後的訊息: " + formattedMessage);
+
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setUser(false);
         aiMsg.setSessionId(sessionId);
 
         try {
             GenerateContentResponse resp = chatSession.sendMessage(formattedMessage);
-            aiMsg.setContent(ResponseHandler.getText(resp));
+            System.out.println("收到回應物件: " + resp.text());
+
+            String responseText = resp.text();
+            System.out.println("回應文字: " + responseText);
+
+            if (responseText != null && !responseText.trim().isEmpty()) {
+                aiMsg.setContent(responseText);
+            } else {
+                System.out.println("回應為空，可能被安全過濾器阻擋");
+                aiMsg.setContent("抱歉，我無法回應這個問題");
+            }
+
         } catch (Exception e) {
-            aiMsg.setContent("AI處理錯誤");
+            System.err.println("AI處理錯誤: " + e.getMessage());
+            e.printStackTrace();
+            aiMsg.setContent("AI處理錯誤: " + e.getMessage());
         }
+
         return aiMsg;
     }
 
     public SseEmitter replyStream(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
-        ChatSession chatSession = registry.getSession(sessionId);
+        Chat chatSession = registry.getSession(sessionId);
         String formattedMessage =messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         SseEmitter emitter = new SseEmitter();
 
@@ -47,7 +64,7 @@ public class PlainChatServiceImpl {
             try {
                 ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(formattedMessage);
                 for (GenerateContentResponse response : responseStream) {
-                    String token = ResponseHandler.getText(response);
+                    String token = response.text();
                     emitter.send(SseEmitter.event().data(token));
                 }
                 emitter.complete();
@@ -59,7 +76,7 @@ public class PlainChatServiceImpl {
     }
 
     public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion, String personality) throws IOException {
-        ChatSession chatSession = registry.getSession(sessionId, personality);
+        Chat chatSession = registry.getSession(sessionId, personality);
         String emotionPrediction;
         try {
             emotionPrediction = emotionPredictionChatService.processChat(userMessage);
@@ -74,7 +91,7 @@ public class PlainChatServiceImpl {
             try {
                 ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(analysisPrompt);
                 for (GenerateContentResponse response : responseStream) {
-                    String token = ResponseHandler.getText(response);
+                    String token = response.text();
                     emitter.send(SseEmitter.event().data(token));
                 }
                 emitter.complete();
