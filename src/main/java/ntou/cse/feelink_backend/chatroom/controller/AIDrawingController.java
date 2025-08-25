@@ -43,10 +43,9 @@ public class AIDrawingController {
             String canvasData = request.getImageData();
             String chatroomId = request.getChatroomId(); // 從請求中獲取 chatroomId
             boolean removeBackground = request.isRemoveBackground();
-
-            if (prompt == null || prompt.trim().isEmpty()) {
-                prompt = "請根據這張圖片生成新的內容";
-            }
+            String mode = request.getMode();
+            
+            
 
             // 保存使用者的繪圖輸入 (畫布資料)
             if (canvasData != null && !canvasData.isEmpty() && chatroomId != null) {
@@ -74,8 +73,11 @@ public class AIDrawingController {
                 chatMessageService.createMessage(userTextMessage);
                 logger.info("已保存使用者文字訊息到 chatroomId: {}", chatroomId);
             }
+            if (prompt == null || prompt.trim().isEmpty()) {
+                prompt = "請根據這張圖片生成新的內容";
+            }
 
-            GeminiResponse geminiResponse = geminiService.generateImage(prompt, canvasData);
+            GeminiResponse geminiResponse = geminiService.generateImage(prompt, canvasData, mode);
 
             if (removeBackground && geminiResponse.isSuccess() && geminiResponse.getImageData() != null) {
                 return processWithBackgroundRemoval(geminiResponse, chatroomId);

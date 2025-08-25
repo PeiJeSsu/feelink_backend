@@ -1,6 +1,5 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
-import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +19,7 @@ import java.util.Base64;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 

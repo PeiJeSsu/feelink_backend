@@ -6,29 +6,21 @@ import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
-import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
+import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-
 @Service
 public class PlainChatServiceImpl {
 
-    @Autowired
-    private ChatSessionRegistry registry;
-
-    @Autowired
-    private ChatMessageService chatMessageService;
-
-    @Autowired
-    private EmotionPredictionChatServiceImpl emotionPredictionChatService;
-
-    private final MessageFormattingService messageFormattingService = new MessageFormattingService();
+    private final ChatSessionRegistry registry;
+    private final MessageFormattingService messageFormattingService;
+    private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
+    public PlainChatServiceImpl(ChatSessionRegistry registry, EmotionPredictionChatServiceImpl emotionPredictionChatService, MessageFormattingService messageFormattingService) {
+        this.registry = registry;
+        this.emotionPredictionChatService = emotionPredictionChatService;
+        this.messageFormattingService = messageFormattingService;
+    }
 
     // 原本的非串流方法
     public ChatMessage reply(String userMessage, String chatroomId, Integer conversationCount, Boolean hasDefaultQuestion) {
@@ -48,6 +40,54 @@ public class PlainChatServiceImpl {
 
         return aiMsg;
     }
+
+    public SseEmitter replyStream(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
+        ChatSession chatSession = registry.getSession(sessionId);
+        String formattedMessage =messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        SseEmitter emitter = new SseEmitter();
+
+        new Thread(() -> {
+            try {
+                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(formattedMessage);
+                for (GenerateContentResponse response : responseStream) {
+                    String token = ResponseHandler.getText(response);
+                    emitter.send(SseEmitter.event().data(token));
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        }).start();
+        return emitter;
+    }
+
+    public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion, String personality) throws IOException {
+        ChatSession chatSession = registry.getSession(sessionId, personality);
+        String emotionPrediction;
+        try {
+            emotionPrediction = emotionPredictionChatService.processChat(userMessage);
+        } catch (Exception e) {
+            emotionPrediction = "AI處理情緒預測錯誤";
+        }
+        String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
+        String analysisPrompt = formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction;
+        SseEmitter emitter = new SseEmitter();
+
+        new Thread(() -> {
+            try {
+                ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(analysisPrompt);
+                for (GenerateContentResponse response : responseStream) {
+                    String token = ResponseHandler.getText(response);
+                    emitter.send(SseEmitter.event().data(token));
+                }
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        }).start();
+        return emitter;
+    }
+}
 
     // 新增的串流方法 - 支援資料庫存儲
     public SseEmitter replyStreamWithDatabase(String userMessage, String chatroomId,

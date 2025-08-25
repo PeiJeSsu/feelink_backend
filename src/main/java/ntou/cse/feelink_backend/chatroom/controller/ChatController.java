@@ -5,7 +5,6 @@ import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
 import ntou.cse.feelink_backend.chatroom.service.impl.PlainChatServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -22,42 +21,13 @@ public class ChatController {
     @Autowired
     private ChatMessageService chatMessageService;
 
-    // 保留原本的非串流 API
-    @PostMapping("/simple")
-    public ResponseEntity<ChatMessage> chat(
-            @RequestParam("userMessage") String userMessage,
-            @RequestParam("chatroomId") String chatroomId,
-            @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
-            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
-
-        // 先保存使用者的文字訊息
-        ChatMessage chatMessage = new ChatMessage();
-        chatMessage.setChatroomId(chatroomId);
-        chatMessage.setIsUser(true);
-        chatMessage.setIsDrawingData(false);
-        chatMessage.setContent(userMessage);
-        chatMessage.setSentAt(new Date());
-        chatMessageService.createMessage(chatMessage);
-
-        // 取得 AI 回覆
-        ChatMessage aiResponse = plainChatService.reply(userMessage, chatroomId, conversationCount, hasDefaultQuestion);
-        aiResponse.setChatroomId(chatroomId);
-        aiResponse.setIsDrawingData(false);
-        aiResponse.setSentAt(new Date());
-
-        // 保存 AI 回覆
-        ChatMessage savedAiMessage = chatMessageService.createMessage(aiResponse);
-
-        return ResponseEntity.ok(savedAiMessage);
-    }
-
-    // 新增串流 API - 支援資料庫存儲
     @PostMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chatStream(
             @RequestParam("userMessage") String userMessage,
             @RequestParam("chatroomId") String chatroomId,
             @RequestParam(value = "conversationCount", required = false) Integer conversationCount,
-            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion) throws IOException {
+            @RequestParam(value = "hasDefaultQuestion", required = false) Boolean hasDefaultQuestion,
+            @RequestParam(value = "personality", defaultValue = "default") String personality) throws IOException {
 
         // 先保存使用者的文字訊息
         ChatMessage userMsg = new ChatMessage();
@@ -77,10 +47,10 @@ public class ChatController {
         aiMsg.setSentAt(new Date());
         ChatMessage savedAiMsg = chatMessageService.createMessage(aiMsg);
 
-        // 呼叫串流服務，並傳入儲存的訊息ID以便後續更新
-        return plainChatService.replyStreamWithDatabase(
-                userMessage, chatroomId, conversationCount, hasDefaultQuestion,
-                savedAiMsg.getMessageId()
+        // 呼叫整合了個性化和資料庫功能的串流服務
+        return plainChatService.replyStreamWithPersonalityAndDatabase(
+                userMessage, chatroomId, conversationCount, hasDefaultQuestion, 
+                personality, savedAiMsg.getMessageId()
         );
     }
 }

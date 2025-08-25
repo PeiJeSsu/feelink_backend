@@ -341,3 +341,4 @@ class ChatServiceImplTest {
         return Arrays.asList(userMsg, aiMsg);
     }
 }
+

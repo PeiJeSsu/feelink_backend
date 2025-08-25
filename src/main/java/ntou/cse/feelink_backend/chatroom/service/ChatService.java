@@ -7,9 +7,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 
 public interface ChatService {
-    // 原本的非串流處理方法
     ChatMessage processChat(MultipartFile file, String userMessage, String chatroomId) throws IOException;
-
-    // 新增的串流處理方法
     SseEmitter processChatStream(MultipartFile file, String userMessage, String chatroomId, String aiMessageId) throws IOException;
+    SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String chatroomId, String personality, String aiMessageId) throws IOException;
 }

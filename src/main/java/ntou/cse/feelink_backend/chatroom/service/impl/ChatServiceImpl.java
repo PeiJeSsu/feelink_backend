@@ -3,11 +3,11 @@ package ntou.cse.feelink_backend.chatroom.service.impl;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 
 import java.io.IOException;
 import java.util.List;
@@ -49,7 +49,10 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public SseEmitter processChatStream(MultipartFile file, String userMessage, String chatroomId, String aiMessageId) throws IOException {
+    public SseEmitter processChatStreamWithPersonalityAndDatabase(
+            MultipartFile file, String userMessage, String chatroomId, 
+            String personality, String aiMessageId) throws IOException {
+
         // 取得該聊天室的歷史訊息來提供上下文
         List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
 
@@ -73,6 +76,7 @@ public class ChatServiceImpl implements ChatService {
         final MultipartFile finalFile = file;
         final String finalAnalysisPrompt = analysisPrompt;
         final String finalChatroomId = chatroomId;
+        final String finalPersonality = personality;
         final String finalAiMessageId = aiMessageId;
 
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // 設置較長的超時時間
@@ -80,8 +84,13 @@ public class ChatServiceImpl implements ChatService {
         new Thread(() -> {
             StringBuilder fullResponse = new StringBuilder();
             try {
-                // 呼叫串流分析服務
-                drawingAnalysisChatService.processChatStream(finalFile, finalAnalysisPrompt, finalChatroomId,
+                // 檢查是否支援個性化功能
+                boolean supportsPersonality = checkPersonalitySupport();
+                
+                if (supportsPersonality) {
+                    // 使用個性化串流分析服務
+                    drawingAnalysisChatService.processChatStreamWithPersonality(
+                        finalFile, finalAnalysisPrompt, finalChatroomId, finalPersonality,
                         // onToken callback
                         (token) -> {
                             fullResponse.append(token);
@@ -92,42 +101,29 @@ public class ChatServiceImpl implements ChatService {
                             }
                         },
                         // onComplete callback
-                        () -> {
-                            // 串流結束後，更新資料庫中的 AI 訊息內容
-                            try {
-                                Optional<ChatMessage> aiMessageOpt = chatMessageService.getMessageById(finalAiMessageId);
-                                if (aiMessageOpt.isPresent()) {
-                                    ChatMessage aiMessage = aiMessageOpt.get();
-                                    aiMessage.setContent(fullResponse.toString());
-                                    chatMessageService.updateMessage(aiMessage);
-                                }
-                            } catch (Exception e) {
-                                System.err.println("更新AI訊息到資料庫失敗: " + e.getMessage());
-                            }
-                            emitter.complete();
-                        },
+                        () -> updateDatabaseAndComplete(finalAiMessageId, fullResponse, emitter),
                         // onError callback
-                        (error) -> {
-                            System.err.println("串流分析錯誤: " + error.getMessage());
-
-                            // 如果發生錯誤，也要更新資料庫
+                        (error) -> handleErrorAndUpdate(finalAiMessageId, fullResponse, error, emitter)
+                    );
+                } else {
+                    // 使用基本串流分析服務
+                    drawingAnalysisChatService.processChatStream(
+                        finalFile, finalAnalysisPrompt, finalChatroomId,
+                        // onToken callback
+                        (token) -> {
+                            fullResponse.append(token);
                             try {
-                                Optional<ChatMessage> aiMessageOpt = chatMessageService.getMessageById(finalAiMessageId);
-                                if (aiMessageOpt.isPresent()) {
-                                    ChatMessage aiMessage = aiMessageOpt.get();
-                                    String errorContent = fullResponse.length() > 0 ?
-                                            fullResponse.toString() + "\n[錯誤: " + error.getMessage() + "]" :
-                                            "AI處理錯誤: " + error.getMessage();
-                                    aiMessage.setContent(errorContent);
-                                    chatMessageService.updateMessage(aiMessage);
-                                }
-                            } catch (Exception dbError) {
-                                System.err.println("更新錯誤訊息到資料庫失敗: " + dbError.getMessage());
+                                emitter.send(SseEmitter.event().data(token));
+                            } catch (IOException e) {
+                                System.err.println("發送 SSE 資料失敗: " + e.getMessage());
                             }
-
-                            emitter.completeWithError(error);
-                        }
-                );
+                        },
+                        // onComplete callback
+                        () -> updateDatabaseAndComplete(finalAiMessageId, fullResponse, emitter),
+                        // onError callback
+                        (error) -> handleErrorAndUpdate(finalAiMessageId, fullResponse, error, emitter)
+                    );
+                }
 
             } catch (Exception e) {
                 System.err.println("串流處理初始化錯誤: " + e.getMessage());
@@ -136,5 +132,68 @@ public class ChatServiceImpl implements ChatService {
         }).start();
 
         return emitter;
+    }
+
+
+    @Override
+    public SseEmitter processChatStream(MultipartFile file, String userMessage, String chatroomId) throws IOException {
+        return processChatStreamWithPersonalityAndDatabase(file, userMessage, chatroomId, "default", null);
+    }
+
+    @Override
+    public SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String sessionId, String personality) throws IOException {
+        return processChatStreamWithPersonalityAndDatabase(file, userMessage, sessionId, personality, null);
+    }
+
+
+    private boolean checkPersonalitySupport() {
+        try {
+            // 透過反射檢查 drawingAnalysisChatService 是否有個性化方法
+            drawingAnalysisChatService.getClass().getMethod("processChatStreamWithPersonality", 
+                MultipartFile.class, String.class, String.class, String.class, 
+                java.util.function.Consumer.class, Runnable.class, java.util.function.Consumer.class);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    private void updateDatabaseAndComplete(String aiMessageId, StringBuilder fullResponse, SseEmitter emitter) {
+        if (aiMessageId != null) {
+            try {
+                Optional<ChatMessage> aiMessageOpt = chatMessageService.getMessageById(aiMessageId);
+                if (aiMessageOpt.isPresent()) {
+                    ChatMessage aiMessage = aiMessageOpt.get();
+                    aiMessage.setContent(fullResponse.toString());
+                    chatMessageService.updateMessage(aiMessage);
+                }
+            } catch (Exception e) {
+                System.err.println("更新AI訊息到資料庫失敗: " + e.getMessage());
+            }
+        }
+        emitter.complete();
+    }
+
+    private void handleErrorAndUpdate(String aiMessageId, StringBuilder fullResponse, Exception error, SseEmitter emitter) {
+        System.err.println("串流分析錯誤: " + error.getMessage());
+
+        // 如果發生錯誤，也要更新資料庫
+        if (aiMessageId != null) {
+            try {
+                Optional<ChatMessage> aiMessageOpt = chatMessageService.getMessageById(aiMessageId);
+                if (aiMessageOpt.isPresent()) {
+                    ChatMessage aiMessage = aiMessageOpt.get();
+                    String errorContent = fullResponse.length() > 0 ?
+                            fullResponse.toString() + "\n[錯誤: " + error.getMessage() + "]" :
+                            "AI處理錯誤: " + error.getMessage();
+                    aiMessage.setContent(errorContent);
+                    chatMessageService.updateMessage(aiMessage);
+                }
+            } catch (Exception dbError) {
+                System.err.println("更新錯誤訊息到資料庫失敗: " + dbError.getMessage());
+            }
+        }
+
+        emitter.completeWithError(error);
     }
 }
