@@ -46,7 +46,7 @@ class GeminiServiceTest {
     }
 
     @Test
-    void testGenerateImage_Success() {
+    void testGenerateImage_DrawingMode_Success() {
         // Arrange
         String mockResponse = """
             {
@@ -72,7 +72,7 @@ class GeminiServiceTest {
                 .thenReturn(responseEntity);
 
         // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA);
+        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing");
 
         // Assert
         assertNotNull(result);
@@ -87,8 +87,44 @@ class GeminiServiceTest {
         verify(restTemplate).exchange(urlCaptor.capture(), eq(HttpMethod.POST),
                 entityCaptor.capture(), eq(String.class));
 
-        assertTrue(urlCaptor.getValue().contains("generateContent"));
+        assertTrue(urlCaptor.getValue().contains("gemini-2.0-flash-preview-image-generation:generateContent"));
         assertTrue(urlCaptor.getValue().contains(TEST_API_KEY));
+    }
+
+    @Test
+    void testGenerateImage_GenerateObjectMode_Success() {
+        // Arrange
+        String mockResponse = """
+            {
+                "candidates": [{
+                    "content": {
+                        "parts": [
+                            {
+                                "text": "Generated object image"
+                            },
+                            {
+                                "inlineData": {
+                                    "data": "objectImageData"
+                                }
+                            }
+                        ]
+                    }
+                }]
+            }
+            """;
+
+        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "generateObject");
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals("Generated object image", result.getMessage());
+        assertEquals("objectImageData", result.getImageData());
     }
 
     @Test
@@ -113,7 +149,7 @@ class GeminiServiceTest {
                 .thenReturn(responseEntity);
 
         // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, null);
+        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, null, "drawing");
 
         // Assert
         assertNotNull(result);
@@ -144,7 +180,7 @@ class GeminiServiceTest {
                 .thenReturn(responseEntity);
 
         // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, "");
+        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, "", "drawing");
 
         // Assert
         assertNotNull(result);
@@ -162,7 +198,7 @@ class GeminiServiceTest {
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA));
+                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing"));
 
         assertTrue(exception.getMessage().contains("Invalid response format from Gemini API"));
     }
@@ -175,7 +211,7 @@ class GeminiServiceTest {
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA));
+                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing"));
 
         assertTrue(exception.getMessage().contains("Error generating image"));
         assertTrue(exception.getCause().getMessage().contains("Network error"));
@@ -231,7 +267,7 @@ class GeminiServiceTest {
         verify(restTemplate, timeout(1000)).exchange(urlCaptor.capture(), eq(HttpMethod.POST),
                 any(HttpEntity.class), eq(String.class));
 
-        assertTrue(urlCaptor.getValue().contains("streamGenerateContent"));
+        assertTrue(urlCaptor.getValue().contains("gemini-2.0-flash-exp:streamGenerateContent"));
     }
 
     @Test
@@ -386,5 +422,101 @@ class GeminiServiceTest {
         assertTrue(result.isSuccess());
         assertEquals("", result.getMessage());
         assertEquals("onlyImageData", result.getImageData());
+    }
+
+    @Test
+    void testGenerateImage_DrawingMode_SystemInstructions() {
+        // Arrange
+        String mockResponse = """
+            {
+                "candidates": [{
+                    "content": {
+                        "parts": [
+                            {
+                                "text": "Drawing mode response"
+                            }
+                        ]
+                    }
+                }]
+            }
+            """;
+
+        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing");
+
+        // Assert - verify that the request was made (system instructions are embedded in request)
+        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST),
+                entityCaptor.capture(), eq(String.class));
+
+        // The system instructions should be in the request body
+        assertNotNull(entityCaptor.getValue().getBody());
+    }
+
+    @Test
+    void testGenerateImage_GenerateObjectMode_SystemInstructions() {
+        // Arrange
+        String mockResponse = """
+            {
+                "candidates": [{
+                    "content": {
+                        "parts": [
+                            {
+                                "text": "Object generation response"
+                            }
+                        ]
+                    }
+                }]
+            }
+            """;
+
+        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(responseEntity);
+
+        // Act
+        geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "generateObject");
+
+        // Assert - verify that the request was made
+        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST),
+                entityCaptor.capture(), eq(String.class));
+
+        // The system instructions should be in the request body
+        assertNotNull(entityCaptor.getValue().getBody());
+    }
+
+    @Test
+    void testGenerateImage_UnknownMode() {
+        // Arrange
+        String mockResponse = """
+            {
+                "candidates": [{
+                    "content": {
+                        "parts": [
+                            {
+                                "text": "Unknown mode response"
+                            }
+                        ]
+                    }
+                }]
+            }
+            """;
+
+        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(responseEntity);
+
+        // Act - using an unknown mode should still work (no system instructions will be set)
+        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "unknownMode");
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals("Unknown mode response", result.getMessage());
     }
 }

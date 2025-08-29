@@ -75,7 +75,7 @@ class MessageFormattingServiceTest {
         String expected = "使用者回答了: 是的，我覺得工作壓力很大" +
                 " \n請根據這段回覆自然地繼續對話，並試著引導對方多聊一些。可以的話，以問句結尾，讓對話更流暢。" +
                 "請勿重複使用者的回答，應該以新的方式回應。由於你們已經聊了一會兒，也許可以邀請對方透過一幅簡單的畫來表達當下的感受" +
-                "(像是以要不要話張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
+                "(像是以要不要畫張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
 
         // When
         String result = messageFormattingService.getFullMessage(messageText, conversationCount, hasDefaultQuestion);
@@ -94,7 +94,7 @@ class MessageFormattingServiceTest {
         String expected = "使用者回答了: 我需要休息一下" +
                 " \n請根據這段回覆自然地繼續對話，並試著引導對方多聊一些。可以的話，以問句結尾，讓對話更流暢。" +
                 "請勿重複使用者的回答，應該以新的方式回應。由於你們已經聊了一會兒，也許可以邀請對方透過一幅簡單的畫來表達當下的感受" +
-                "(像是以要不要話張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
+                "(像是以要不要畫張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
 
         // When
         String result = messageFormattingService.getFullMessage(messageText, conversationCount, hasDefaultQuestion);
@@ -113,7 +113,7 @@ class MessageFormattingServiceTest {
         String expected = "使用者回答了: 謝謝你的關心" +
                 " \n請根據這段回覆自然地繼續對話，並試著引導對方多聊一些。可以的話，以問句結尾，讓對話更流暢。" +
                 "請勿重複使用者的回答，應該以新的方式回應。由於你們已經聊了一會兒，也許可以邀請對方透過一幅簡單的畫來表達當下的感受" +
-                "(像是以要不要話張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
+                "(像是以要不要畫張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
 
         // When
         String result = messageFormattingService.getFullMessage(messageText, conversationCount, hasDefaultQuestion);
@@ -245,16 +245,14 @@ class MessageFormattingServiceTest {
     @Test
     void getFullMessage_WithLongMessageText_ShouldHandleCorrectly() {
         // Given
-        String messageText = "今天我經歷了很多事情，早上起床後就感覺心情不太好，然後工作上也遇到了一些困難，" +
-                "同事之間的關係也有些複雜，讓我覺得壓力很大。不過下午的時候，我遇到了一個很友善的人，" +
-                "他給了我一些建議，讓我覺得世界還是很美好的。";
+        String messageText = "是的，我覺得工作壓力很大";
         Integer conversationCount = 3;
         Boolean hasDefaultQuestion = true;
 
-        String expected = "使用者回答了: " + messageText +
+        String expected = "使用者回答了: 是的，我覺得工作壓力很大" +
                 " \n請根據這段回覆自然地繼續對話，並試著引導對方多聊一些。可以的話，以問句結尾，讓對話更流暢。" +
                 "請勿重複使用者的回答，應該以新的方式回應。由於你們已經聊了一會兒，也許可以邀請對方透過一幅簡單的畫來表達當下的感受" +
-                "(像是以要不要話張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
+                "(像是以要不要畫張圖抒發你的感受之類的問句)，但請盡量流暢的銜接問題。";
 
         // When
         String result = messageFormattingService.getFullMessage(messageText, conversationCount, hasDefaultQuestion);

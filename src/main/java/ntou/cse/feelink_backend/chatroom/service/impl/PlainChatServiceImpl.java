@@ -77,27 +77,13 @@ public class PlainChatServiceImpl {
         return emitter;
     }
 
-    /**
-     * 完整功能串流方法 - 包含個性、情緒預測和資料庫存儲
-     */
-    public SseEmitter replyStreamWithPersonality(String userMessage, String chatroomId,
-                                                 Integer conversationCount, Boolean hasDefaultQuestion,
-                                                 String personality, String aiMessageId) throws IOException {
-        return processStreamWithAllFeatures(userMessage, chatroomId, conversationCount, hasDefaultQuestion, personality, aiMessageId);
-    }
 
-    /**
-     * 串流方法 - 只包含資料庫存儲，使用預設個性
-     */
     public SseEmitter replyStreamWithDatabase(String userMessage, String chatroomId,
                                               Integer conversationCount, Boolean hasDefaultQuestion,
                                               String aiMessageId) throws IOException {
         return processStreamWithAllFeatures(userMessage, chatroomId, conversationCount, hasDefaultQuestion, "default", aiMessageId);
     }
 
-    /**
-     * 核心處理方法 - 整合所有功能
-     */
     public SseEmitter processStreamWithAllFeatures(String userMessage, String chatroomId,
                                                     Integer conversationCount, Boolean hasDefaultQuestion,
                                                     String personality, String aiMessageId) throws IOException {
