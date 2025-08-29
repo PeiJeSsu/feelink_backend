@@ -1,3 +1,18 @@
+package ntou.cse.feelink_backend.chatroom.controller;
+
+import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
+import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.service.ChatService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
+import java.util.Base64;
+import java.util.Date;
+
 @RestController
 @RequestMapping("/analysis")
 public class AnalysisController {
@@ -49,7 +64,7 @@ public class AnalysisController {
         ChatMessage savedAiMsg = chatMessageService.createMessage(aiMsg);
 
         // 呼叫整合了個性化和資料庫功能的串流服務
-        return chatService.processChatStreamWithPersonalityAndDatabase(
+        return chatService.processChatStreamWithPersonality(
             file, userMessage, chatroomId, personality, savedAiMsg.getMessageId());
     }
 }

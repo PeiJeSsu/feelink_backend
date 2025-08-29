@@ -48,7 +48,7 @@ public class ChatController {
         ChatMessage savedAiMsg = chatMessageService.createMessage(aiMsg);
 
         // 呼叫整合了個性化和資料庫功能的串流服務
-        return plainChatService.replyStreamWithPersonalityAndDatabase(
+        return plainChatService.processStreamWithAllFeatures(
                 userMessage, chatroomId, conversationCount, hasDefaultQuestion, 
                 personality, savedAiMsg.getMessageId()
         );
