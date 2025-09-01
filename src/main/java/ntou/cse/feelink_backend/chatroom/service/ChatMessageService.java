@@ -19,42 +19,37 @@ public class ChatMessageService {
     @Autowired
     private ChatMessageRepository chatMessageRepository;
 
-
     public ChatMessage saveMessage(ChatMessage message) {
         if (message.getSentAt() == null) {
             message.setSentAt(new Date());
         }
 
         ChatMessage savedMessage = chatMessageRepository.save(message);
-        logger.info("已保存訊息: chatroomId={}, isUser={}, isDrawingData={}",
-                message.getChatroomId(), message.getIsUser(), message.getIsDrawingData());
+        logger.info("已保存訊息");  // 移除 user-controlled 資料
         return savedMessage;
     }
-
 
     public List<ChatMessage> getAllMessages() {
         return chatMessageRepository.findAll();
     }
 
-
     public Optional<ChatMessage> getMessageById(String messageId) {
         return chatMessageRepository.findById(messageId);
     }
-
 
     public ChatMessage createMessage(ChatMessage message) {
         return saveMessage(message);
     }
 
-
     public ChatMessage updateMessage(ChatMessage message) {
-        return chatMessageRepository.save(message);
+        ChatMessage updatedMessage = chatMessageRepository.save(message);
+        logger.info("已更新訊息");  // 安全日誌
+        return updatedMessage;
     }
-
 
     public void deleteMessage(String messageId) {
         chatMessageRepository.deleteById(messageId);
-        logger.info("已刪除訊息: messageId={}", messageId);
+        logger.info("已刪除訊息");  // 移除 user-controlled 資料
     }
 
     public List<ChatMessage> getMessagesByChatroomId(String chatroomId) {
@@ -81,7 +76,7 @@ public class ChatMessageService {
         List<ChatMessage> messages = getMessagesByChatroomId(chatroomId);
         int count = messages.size();
         chatMessageRepository.deleteByChatroomId(chatroomId);
-        logger.info("已刪除聊天室 {} 的 {} 條訊息", chatroomId, count);
+        logger.info("已刪除訊息");  // 安全日誌
         return count;
     }
 
@@ -89,12 +84,11 @@ public class ChatMessageService {
         List<ChatMessage> userMessages = getUserMessagesByChatroomId(chatroomId);
         int count = userMessages.size();
 
-        // 刪除使用者訊息
         for (ChatMessage message : userMessages) {
             chatMessageRepository.deleteById(message.getMessageId());
         }
 
-        logger.info("已刪除聊天室 {} 的 {} 條使用者訊息", chatroomId, count);
+        logger.info("已刪除使用者訊息");  // 安全日誌
         return count;
     }
 
@@ -102,12 +96,11 @@ public class ChatMessageService {
         List<ChatMessage> aiMessages = getAIMessagesByChatroomId(chatroomId);
         int count = aiMessages.size();
 
-        // 刪除AI訊息
         for (ChatMessage message : aiMessages) {
             chatMessageRepository.deleteById(message.getMessageId());
         }
 
-        logger.info("已刪除聊天室 {} 的 {} 條AI訊息", chatroomId, count);
+        logger.info("已刪除 AI 訊息");  // 安全日誌
         return count;
     }
 
@@ -115,12 +108,11 @@ public class ChatMessageService {
         List<ChatMessage> textMessages = getTextMessagesByChatroomId(chatroomId);
         int count = textMessages.size();
 
-        // 刪除文字訊息
         for (ChatMessage message : textMessages) {
             chatMessageRepository.deleteById(message.getMessageId());
         }
 
-        logger.info("已刪除聊天室 {} 的 {} 條文字訊息", chatroomId, count);
+        logger.info("已刪除文字訊息");  // 安全日誌
         return count;
     }
 
@@ -128,18 +120,17 @@ public class ChatMessageService {
         List<ChatMessage> drawingMessages = getDrawingMessagesByChatroomId(chatroomId);
         int count = drawingMessages.size();
 
-        // 刪除畫布訊息
         for (ChatMessage message : drawingMessages) {
             chatMessageRepository.deleteById(message.getMessageId());
         }
 
-        logger.info("已刪除聊天室 {} 的 {} 條畫布訊息", chatroomId, count);
+        logger.info("已刪除畫布訊息");  // 安全日誌
         return count;
     }
 
     public void deleteMessagesByChatroomId(String chatroomId) {
         chatMessageRepository.deleteByChatroomId(chatroomId);
-        logger.info("已刪除聊天室 {} 的所有訊息", chatroomId);
+        logger.info("已刪除所有訊息");  // 安全日誌
     }
 
     public long countMessagesByChatroomId(String chatroomId) {
