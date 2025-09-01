@@ -1,8 +1,10 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ntou.cse.feelink_backend.chatroom.dto.ChatMessageDTO;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -200,9 +202,11 @@ class ChatMessageControllerTest {
     void testCreateMessage_Success() throws Exception {
         when(chatMessageService.createMessage(any(ChatMessage.class))).thenReturn(userTextMessage);
 
+        ChatMessageDTO userTextDTO = MapperUtil.toDTO(userTextMessage);
+
         mockMvc.perform(post("/api/messages")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userTextMessage)))
+                        .content(objectMapper.writeValueAsString(userTextDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messageId").value("msg1"))
                 .andExpect(jsonPath("$.content").value("Hello"));
@@ -216,9 +220,11 @@ class ChatMessageControllerTest {
         ChatMessage updatedMessage = createChatMessage("msg1", "chatroom1", "Updated content", true, false);
         when(chatMessageService.updateMessage(any(ChatMessage.class))).thenReturn(updatedMessage);
 
+        ChatMessageDTO updatedDTO = MapperUtil.toDTO(updatedMessage);
+
         mockMvc.perform(put("/api/messages/msg1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedMessage)))
+                        .content(objectMapper.writeValueAsString(updatedDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").value("Updated content"));
 

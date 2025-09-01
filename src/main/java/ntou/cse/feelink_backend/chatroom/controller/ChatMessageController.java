@@ -1,7 +1,9 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
+import ntou.cse.feelink_backend.chatroom.dto.ChatMessageDTO;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,95 +19,107 @@ public class ChatMessageController {
     private ChatMessageService chatMessageService;
 
     @GetMapping
-    public ResponseEntity<List<ChatMessage>> getAllMessages() {
+    public ResponseEntity<List<ChatMessageDTO>> getAllMessages() {
         List<ChatMessage> messages = chatMessageService.getAllMessages();
-        return ResponseEntity.ok(messages);
+        List<ChatMessageDTO> messageDTOs = MapperUtil.toChatMessageDTOList(messages);
+        return ResponseEntity.ok(messageDTOs);
     }
 
     @GetMapping("/{messageId}")
-    public ResponseEntity<ChatMessage> getMessageById(@PathVariable String messageId) {
+    public ResponseEntity<ChatMessageDTO> getMessageById(@PathVariable String messageId) {
         Optional<ChatMessage> message = chatMessageService.getMessageById(messageId);
-        return message.map(ResponseEntity::ok)
+        return message.map(msg -> ResponseEntity.ok(MapperUtil.toDTO(msg)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/chatroom/{chatroomId}")
-    public ResponseEntity<List<ChatMessage>> getMessagesByChatroomId(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getMessagesByChatroomId(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        return ResponseEntity.ok(messages);
+        List<ChatMessageDTO> messageDTOs = MapperUtil.toChatMessageDTOList(messages);
+        return ResponseEntity.ok(messageDTOs);
     }
 
     // 只取得使用者訊息
     @GetMapping("/chatroom/{chatroomId}/user")
-    public ResponseEntity<List<ChatMessage>> getUserMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getUserMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> userMessages = messages.stream()
+        List<ChatMessageDTO> userMessages = messages.stream()
                 .filter(ChatMessage::getIsUser)
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userMessages);
     }
 
     // 只取得AI訊息
     @GetMapping("/chatroom/{chatroomId}/ai")
-    public ResponseEntity<List<ChatMessage>> getAIMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getAIMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> aiMessages = messages.stream()
+        List<ChatMessageDTO> aiMessages = messages.stream()
                 .filter(msg -> !msg.getIsUser())
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(aiMessages);
     }
 
     // 新增：只取得一般文字訊息（非畫布資料）
     @GetMapping("/chatroom/{chatroomId}/text")
-    public ResponseEntity<List<ChatMessage>> getTextMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getTextMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> textMessages = messages.stream()
+        List<ChatMessageDTO> textMessages = messages.stream()
                 .filter(msg -> !msg.getIsDrawingData())
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(textMessages);
     }
 
     // 新增：只取得畫布資料
     @GetMapping("/chatroom/{chatroomId}/drawing")
-    public ResponseEntity<List<ChatMessage>> getDrawingMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getDrawingMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> drawingMessages = messages.stream()
+        List<ChatMessageDTO> drawingMessages = messages.stream()
                 .filter(ChatMessage::getIsDrawingData)
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(drawingMessages);
     }
 
     // 新增：取得使用者的畫布資料
     @GetMapping("/chatroom/{chatroomId}/user/drawing")
-    public ResponseEntity<List<ChatMessage>> getUserDrawingMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getUserDrawingMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> userDrawingMessages = messages.stream()
+        List<ChatMessageDTO> userDrawingMessages = messages.stream()
                 .filter(msg -> msg.getIsUser() && msg.getIsDrawingData())
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userDrawingMessages);
     }
 
     // 新增：取得使用者的文字訊息
     @GetMapping("/chatroom/{chatroomId}/user/text")
-    public ResponseEntity<List<ChatMessage>> getUserTextMessages(@PathVariable String chatroomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getUserTextMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
-        List<ChatMessage> userTextMessages = messages.stream()
+        List<ChatMessageDTO> userTextMessages = messages.stream()
                 .filter(msg -> msg.getIsUser() && !msg.getIsDrawingData())
+                .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userTextMessages);
     }
 
     @PostMapping
-    public ResponseEntity<ChatMessage> createMessage(@RequestBody ChatMessage message) {
+    public ResponseEntity<ChatMessageDTO> createMessage(@RequestBody ChatMessageDTO messageDTO) {
+        ChatMessage message = MapperUtil.toEntity(messageDTO);
         ChatMessage createdMessage = chatMessageService.createMessage(message);
-        return ResponseEntity.ok(createdMessage);
+        ChatMessageDTO createdMessageDTO = MapperUtil.toDTO(createdMessage);
+        return ResponseEntity.ok(createdMessageDTO);
     }
 
     @PutMapping("/{messageId}")
-    public ResponseEntity<ChatMessage> updateMessage(@PathVariable String messageId, @RequestBody ChatMessage message) {
-        message.setMessageId(messageId);
+    public ResponseEntity<ChatMessageDTO> updateMessage(@PathVariable String messageId, @RequestBody ChatMessageDTO messageDTO) {
+        messageDTO.setMessageId(messageId);
+        ChatMessage message = MapperUtil.toEntity(messageDTO);
         ChatMessage updatedMessage = chatMessageService.updateMessage(message);
-        return ResponseEntity.ok(updatedMessage);
+        ChatMessageDTO updatedMessageDTO = MapperUtil.toDTO(updatedMessage);
+        return ResponseEntity.ok(updatedMessageDTO);
     }
 
     @DeleteMapping("/{messageId}")

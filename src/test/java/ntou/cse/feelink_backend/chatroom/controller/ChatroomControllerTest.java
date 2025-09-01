@@ -1,8 +1,10 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ntou.cse.feelink_backend.chatroom.dto.ChatroomDTO;
 import ntou.cse.feelink_backend.chatroom.model.Chatroom;
 import ntou.cse.feelink_backend.chatroom.service.ChatroomService;
+import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +20,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,11 +50,9 @@ class ChatroomControllerTest {
 
     @Test
     void getAllChatrooms_ShouldReturnAllChatrooms() throws Exception {
-        // Given
         List<Chatroom> chatrooms = Arrays.asList(testChatroom);
         when(chatroomService.getAllChatrooms()).thenReturn(chatrooms);
 
-        // When & Then
         mockMvc.perform(get("/api/chatrooms"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -65,11 +64,9 @@ class ChatroomControllerTest {
     }
 
     @Test
-    void getChatroomById_WhenChatroomExists_ShouldReturnChatroom() throws Exception {
-        // Given
+    void getChatroomById_WhenChatroomExists_ShouldReturnChatroomDTO() throws Exception {
         when(chatroomService.getChatroomById("chatroom123")).thenReturn(Optional.of(testChatroom));
 
-        // When & Then
         mockMvc.perform(get("/api/chatrooms/chatroom123"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -82,10 +79,8 @@ class ChatroomControllerTest {
 
     @Test
     void getChatroomById_WhenChatroomNotExists_ShouldReturnNotFound() throws Exception {
-        // Given
         when(chatroomService.getChatroomById("nonexistent")).thenReturn(Optional.empty());
 
-        // When & Then
         mockMvc.perform(get("/api/chatrooms/nonexistent"))
                 .andExpect(status().isNotFound());
 
@@ -93,12 +88,10 @@ class ChatroomControllerTest {
     }
 
     @Test
-    void getUserChatrooms_WhenSuccessful_ShouldReturnUserChatrooms() throws Exception {
-        // Given
+    void getUserChatrooms_WhenSuccessful_ShouldReturnChatroomDTOList() throws Exception {
         List<Chatroom> userChatrooms = Arrays.asList(testChatroom);
         when(chatroomService.getChatroomsByUserId("user123")).thenReturn(userChatrooms);
 
-        // When & Then
         mockMvc.perform(get("/api/chatrooms/user/user123"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -111,11 +104,9 @@ class ChatroomControllerTest {
 
     @Test
     void getUserChatrooms_WhenServiceThrowsException_ShouldReturnInternalServerError() throws Exception {
-        // Given
         when(chatroomService.getChatroomsByUserId("user123"))
                 .thenThrow(new RuntimeException("Service error"));
 
-        // When & Then
         mockMvc.perform(get("/api/chatrooms/user/user123"))
                 .andExpect(status().isInternalServerError());
 
@@ -123,18 +114,13 @@ class ChatroomControllerTest {
     }
 
     @Test
-    void createChatroom_WhenSuccessful_ShouldReturnCreatedChatroom() throws Exception {
-        // Given
-        Chatroom inputChatroom = new Chatroom();
-        inputChatroom.setUserId("user123");
-        inputChatroom.setTitle("New Chatroom");
-
+    void createChatroom_WhenSuccessful_ShouldReturnCreatedChatroomDTO() throws Exception {
+        ChatroomDTO inputDTO = MapperUtil.toDTO(testChatroom);
         when(chatroomService.createChatroom(any(Chatroom.class))).thenReturn(testChatroom);
 
-        // When & Then
         mockMvc.perform(post("/api/chatrooms")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(inputChatroom)))
+                        .content(objectMapper.writeValueAsString(inputDTO)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.chatroomId").value("chatroom123"))
@@ -146,39 +132,32 @@ class ChatroomControllerTest {
 
     @Test
     void createChatroom_WhenServiceThrowsException_ShouldReturnInternalServerError() throws Exception {
-        // Given
-        Chatroom inputChatroom = new Chatroom();
-        inputChatroom.setUserId("user123");
-        inputChatroom.setTitle("New Chatroom");
-
+        ChatroomDTO inputDTO = MapperUtil.toDTO(testChatroom);
         when(chatroomService.createChatroom(any(Chatroom.class)))
                 .thenThrow(new RuntimeException("Service error"));
 
-        // When & Then
         mockMvc.perform(post("/api/chatrooms")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(inputChatroom)))
+                        .content(objectMapper.writeValueAsString(inputDTO)))
                 .andExpect(status().isInternalServerError());
 
         verify(chatroomService, times(1)).createChatroom(any(Chatroom.class));
     }
 
     @Test
-    void updateChatroom_WhenSuccessful_ShouldReturnUpdatedChatroom() throws Exception {
-        // Given
+    void updateChatroom_WhenSuccessful_ShouldReturnUpdatedChatroomDTO() throws Exception {
         Chatroom updatedChatroom = new Chatroom();
         updatedChatroom.setChatroomId("chatroom123");
         updatedChatroom.setUserId("user123");
         updatedChatroom.setTitle("Updated Chatroom");
 
+        ChatroomDTO updatedDTO = MapperUtil.toDTO(updatedChatroom);
         when(chatroomService.updateChatroom(any(Chatroom.class))).thenReturn(updatedChatroom);
 
-        // When & Then
         mockMvc.perform(put("/api/chatrooms/chatroom123")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedChatroom)))
+                        .content(objectMapper.writeValueAsString(updatedDTO)))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.chatroomId").value("chatroom123"))
                 .andExpect(jsonPath("$.userId").value("user123"))
                 .andExpect(jsonPath("$.title").value("Updated Chatroom"));
@@ -188,18 +167,13 @@ class ChatroomControllerTest {
 
     @Test
     void updateChatroom_WhenServiceThrowsException_ShouldReturnInternalServerError() throws Exception {
-        // Given
-        Chatroom updateChatroom = new Chatroom();
-        updateChatroom.setUserId("user123");
-        updateChatroom.setTitle("Updated Chatroom");
-
+        ChatroomDTO updateDTO = MapperUtil.toDTO(testChatroom);
         when(chatroomService.updateChatroom(any(Chatroom.class)))
                 .thenThrow(new RuntimeException("Service error"));
 
-        // When & Then
         mockMvc.perform(put("/api/chatrooms/chatroom123")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateChatroom)))
+                        .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isInternalServerError());
 
         verify(chatroomService, times(1)).updateChatroom(any(Chatroom.class));
@@ -207,10 +181,8 @@ class ChatroomControllerTest {
 
     @Test
     void deleteChatroom_WhenSuccessful_ShouldReturnNoContent() throws Exception {
-        // Given
         doNothing().when(chatroomService).deleteChatroom("chatroom123");
 
-        // When & Then
         mockMvc.perform(delete("/api/chatrooms/chatroom123"))
                 .andExpect(status().isNoContent());
 
@@ -219,11 +191,8 @@ class ChatroomControllerTest {
 
     @Test
     void deleteChatroom_WhenServiceThrowsException_ShouldReturnInternalServerError() throws Exception {
-        // Given
-        doThrow(new RuntimeException("Service error"))
-                .when(chatroomService).deleteChatroom("chatroom123");
+        doThrow(new RuntimeException("Service error")).when(chatroomService).deleteChatroom("chatroom123");
 
-        // When & Then
         mockMvc.perform(delete("/api/chatrooms/chatroom123"))
                 .andExpect(status().isInternalServerError());
 

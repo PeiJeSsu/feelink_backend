@@ -1,7 +1,9 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
+import ntou.cse.feelink_backend.chatroom.dto.UserDTO;
 import ntou.cse.feelink_backend.chatroom.model.User;
 import ntou.cse.feelink_backend.chatroom.service.UserService;
+import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,36 +18,41 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserDTO>> getAllUsers() {
         List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+        List<UserDTO> userDTOs = MapperUtil.toUserDTOList(users);
+        return ResponseEntity.ok(userDTOs);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<User> getUserById(@PathVariable String userId) {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable String userId) {
         Optional<User> user = userService.getUserById(userId);
-        return user.map(ResponseEntity::ok)
+        return user.map(u -> ResponseEntity.ok(MapperUtil.toDTO(u)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/email/{email}")
-    public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
+    public ResponseEntity<UserDTO> getUserByEmail(@PathVariable String email) {
         Optional<User> user = userService.getUserByEmail(email);
-        return user.map(ResponseEntity::ok)
+        return user.map(u -> ResponseEntity.ok(MapperUtil.toDTO(u)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO userDTO) {
+        User user = MapperUtil.toEntity(userDTO);
         User createdUser = userService.createUser(user);
-        return ResponseEntity.ok(createdUser);
+        UserDTO createdUserDTO = MapperUtil.toDTO(createdUser);
+        return ResponseEntity.ok(createdUserDTO);
     }
 
     @PutMapping("/{userId}")
-    public ResponseEntity<User> updateUser(@PathVariable String userId, @RequestBody User user) {
-        user.setUserId(userId);
+    public ResponseEntity<UserDTO> updateUser(@PathVariable String userId, @RequestBody UserDTO userDTO) {
+        userDTO.setUserId(userId);
+        User user = MapperUtil.toEntity(userDTO);
         User updatedUser = userService.updateUser(user);
-        return ResponseEntity.ok(updatedUser);
+        UserDTO updatedUserDTO = MapperUtil.toDTO(updatedUser);
+        return ResponseEntity.ok(updatedUserDTO);
     }
 
     @DeleteMapping("/{userId}")
@@ -53,23 +60,26 @@ public class UserController {
         userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }
+
     @PostMapping("/sync")
-    public ResponseEntity<User> syncUser(@RequestBody User user) {
+    public ResponseEntity<UserDTO> syncUser(@RequestBody UserDTO userDTO) {
         try {
-            Optional<User> existingUser = userService.getUserById(user.getUserId());
+            Optional<User> existingUser = userService.getUserById(userDTO.getUserId());
 
             User syncedUser;
             if (existingUser.isPresent()) {
                 User existing = existingUser.get();
-                existing.setEmail(user.getEmail());
-                existing.setNickname(user.getNickname());
-                existing.setAINickname(user.getAINickname());
+                existing.setEmail(userDTO.getEmail());
+                existing.setNickname(userDTO.getNickname());
+                existing.setAINickname(userDTO.getAINickname());
                 syncedUser = userService.updateUser(existing);
             } else {
-                syncedUser = userService.createUser(user);
+                User newUser = MapperUtil.toEntity(userDTO);
+                syncedUser = userService.createUser(newUser);
             }
 
-            return ResponseEntity.ok(syncedUser);
+            UserDTO syncedUserDTO = MapperUtil.toDTO(syncedUser);
+            return ResponseEntity.ok(syncedUserDTO);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

@@ -1,7 +1,9 @@
 package ntou.cse.feelink_backend.chatroom.controller;
 
+import ntou.cse.feelink_backend.chatroom.dto.ChatroomDTO;
 import ntou.cse.feelink_backend.chatroom.model.Chatroom;
 import ntou.cse.feelink_backend.chatroom.service.ChatroomService;
+import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,44 +19,50 @@ public class ChatroomController {
     private ChatroomService chatroomService;
 
     @GetMapping
-    public ResponseEntity<List<Chatroom>> getAllChatrooms() {
+    public ResponseEntity<List<ChatroomDTO>> getAllChatrooms() {
         List<Chatroom> chatrooms = chatroomService.getAllChatrooms();
-        return ResponseEntity.ok(chatrooms);
+        List<ChatroomDTO> chatroomDTOs = MapperUtil.toChatroomDTOList(chatrooms);
+        return ResponseEntity.ok(chatroomDTOs);
     }
 
     @GetMapping("/{chatroomId}")
-    public ResponseEntity<Chatroom> getChatroomById(@PathVariable String chatroomId) {
+    public ResponseEntity<ChatroomDTO> getChatroomById(@PathVariable String chatroomId) {
         Optional<Chatroom> chatroom = chatroomService.getChatroomById(chatroomId);
-        return chatroom.map(ResponseEntity::ok)
+        return chatroom.map(room -> ResponseEntity.ok(MapperUtil.toDTO(room)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Chatroom>> getUserChatrooms(@PathVariable String userId) {
+    public ResponseEntity<List<ChatroomDTO>> getUserChatrooms(@PathVariable String userId) {
         try {
             List<Chatroom> chatrooms = chatroomService.getChatroomsByUserId(userId);
-            return ResponseEntity.ok(chatrooms);
+            List<ChatroomDTO> chatroomDTOs = MapperUtil.toChatroomDTOList(chatrooms);
+            return ResponseEntity.ok(chatroomDTOs);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @PostMapping
-    public ResponseEntity<Chatroom> createChatroom(@RequestBody Chatroom chatroom) {
+    public ResponseEntity<ChatroomDTO> createChatroom(@RequestBody ChatroomDTO chatroomDTO) {
         try {
+            Chatroom chatroom = MapperUtil.toEntity(chatroomDTO);
             Chatroom createdChatroom = chatroomService.createChatroom(chatroom);
-            return ResponseEntity.ok(createdChatroom);
+            ChatroomDTO createdChatroomDTO = MapperUtil.toDTO(createdChatroom);
+            return ResponseEntity.ok(createdChatroomDTO);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @PutMapping("/{chatroomId}")
-    public ResponseEntity<Chatroom> updateChatroom(@PathVariable String chatroomId, @RequestBody Chatroom chatroom) {
+    public ResponseEntity<ChatroomDTO> updateChatroom(@PathVariable String chatroomId, @RequestBody ChatroomDTO chatroomDTO) {
         try {
-            chatroom.setChatroomId(chatroomId);
+            chatroomDTO.setChatroomId(chatroomId);
+            Chatroom chatroom = MapperUtil.toEntity(chatroomDTO);
             Chatroom updatedChatroom = chatroomService.updateChatroom(chatroom);
-            return ResponseEntity.ok(updatedChatroom);
+            ChatroomDTO updatedChatroomDTO = MapperUtil.toDTO(updatedChatroom);
+            return ResponseEntity.ok(updatedChatroomDTO);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
