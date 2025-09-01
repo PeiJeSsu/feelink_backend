@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/chatrooms")
-@CrossOrigin(origins = "*")
 public class ChatroomController {
 
     @Autowired
