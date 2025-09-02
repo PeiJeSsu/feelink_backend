@@ -12,6 +12,7 @@ import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -40,6 +41,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Autowired
     private ChatSessionRegistry registry;
+
+
 
     // 為每個聊天室添加鎖機制，防止並發問題
     private final ConcurrentHashMap<String, ReentrantLock> chatroomLocks = new ConcurrentHashMap<>();
@@ -159,7 +162,6 @@ public class ChatServiceImpl implements ChatService {
                     System.out.println("串流已完全消費，聊天室: " + finalChatroomId);
                 } catch (Exception streamError) {
                     System.err.println("消費串流時發生錯誤: " + streamError.getMessage());
-                    streamError.printStackTrace();
                     // 如果串流消費過程中出錯，確保拋出異常讓外層處理
                     throw streamError;
                 }
@@ -173,7 +175,6 @@ public class ChatServiceImpl implements ChatService {
 
             } catch (Exception e) {
                 System.err.println("串流處理錯誤: " + e.getMessage());
-                e.printStackTrace(); // 添加詳細錯誤追蹤
                 handleErrorAndUpdate(finalAiMessageId, fullResponse, e, emitter);
             } finally {
                 // 確保釋放鎖
