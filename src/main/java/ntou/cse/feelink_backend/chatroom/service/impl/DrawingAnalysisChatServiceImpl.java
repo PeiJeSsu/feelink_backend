@@ -9,6 +9,7 @@ import com.google.cloud.vertexai.generativeai.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 @Service
 public class DrawingAnalysisChatServiceImpl {
@@ -18,7 +19,8 @@ public class DrawingAnalysisChatServiceImpl {
         this.registry = registry;
     }
 
-    public String processChat(MultipartFile file, String userMessage,String sessionId) throws IOException {
+    // 原本的非串流方法
+    public String processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
         GenerateContentResponse response;
         ChatSession drawingAnalysisChatSession = registry.getSession(sessionId);
 
@@ -38,7 +40,6 @@ public class DrawingAnalysisChatServiceImpl {
             return "AI處理錯誤";
         }
     }
-
     public SseEmitter processChatStream(MultipartFile file, String userMessage, String sessionId) throws IOException {
         ChatSession chatSession = registry.getSession(sessionId);
         String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");
