@@ -191,12 +191,14 @@ public class AIDrawingController {
                     })
                     .onErrorResume(error -> {
                         saveAIResponse(geminiResponse, chatroomId);
-                        return Mono.just(ResponseEntity.ok(new AIDrawingResponse(true, geminiResponse)));
+                        return Mono.just(ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                                .body(new AIDrawingResponse(true, geminiResponse)));
                     });
 
         } catch (Exception e) {
             saveAIResponse(geminiResponse, chatroomId);
-            return Mono.just(ResponseEntity.ok(new AIDrawingResponse(true, geminiResponse)));
+            return Mono.just(ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                    .body(new AIDrawingResponse(true, geminiResponse)));
         }
     }
 
