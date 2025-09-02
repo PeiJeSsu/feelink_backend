@@ -61,7 +61,7 @@ public class ChatMessageController {
         return ResponseEntity.ok(aiMessages);
     }
 
-    // 新增：只取得一般文字訊息（非畫布資料）
+    // 只取得一般文字訊息（非畫布資料）
     @GetMapping("/chatroom/{chatroomId}/text")
     public ResponseEntity<List<ChatMessageDTO>> getTextMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
@@ -72,7 +72,7 @@ public class ChatMessageController {
         return ResponseEntity.ok(textMessages);
     }
 
-    // 新增：只取得畫布資料
+    // 只取得畫布資料
     @GetMapping("/chatroom/{chatroomId}/drawing")
     public ResponseEntity<List<ChatMessageDTO>> getDrawingMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
@@ -83,7 +83,7 @@ public class ChatMessageController {
         return ResponseEntity.ok(drawingMessages);
     }
 
-    // 新增：取得使用者的畫布資料
+    // 取得使用者的畫布資料
     @GetMapping("/chatroom/{chatroomId}/user/drawing")
     public ResponseEntity<List<ChatMessageDTO>> getUserDrawingMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
@@ -94,7 +94,7 @@ public class ChatMessageController {
         return ResponseEntity.ok(userDrawingMessages);
     }
 
-    // 新增：取得使用者的文字訊息
+    // 取得使用者的文字訊息
     @GetMapping("/chatroom/{chatroomId}/user/text")
     public ResponseEntity<List<ChatMessageDTO>> getUserTextMessages(@PathVariable String chatroomId) {
         List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
@@ -128,7 +128,7 @@ public class ChatMessageController {
         return ResponseEntity.noContent().build();
     }
 
-    // 🎯 新增：刪除聊天室的所有訊息
+    // 刪除聊天室的所有訊息
     @DeleteMapping("/chatroom/{chatroomId}")
     public ResponseEntity<Void> deleteAllMessagesInChatroom(@PathVariable String chatroomId) {
         try {
@@ -141,7 +141,7 @@ public class ChatMessageController {
         }
     }
 
-    // 🎯 新增：刪除聊天室的使用者訊息
+    // 刪除聊天室的使用者訊息
     @DeleteMapping("/chatroom/{chatroomId}/user")
     public ResponseEntity<Void> deleteUserMessagesInChatroom(@PathVariable String chatroomId) {
         try {
@@ -154,7 +154,7 @@ public class ChatMessageController {
         }
     }
 
-    // 🎯 新增：刪除聊天室的AI訊息
+    // 刪除聊天室的AI訊息
     @DeleteMapping("/chatroom/{chatroomId}/ai")
     public ResponseEntity<Void> deleteAIMessagesInChatroom(@PathVariable String chatroomId) {
         try {
@@ -167,7 +167,7 @@ public class ChatMessageController {
         }
     }
 
-    // 🎯 新增：只刪除聊天室的文字訊息
+    // 只刪除聊天室的文字訊息
     @DeleteMapping("/chatroom/{chatroomId}/text")
     public ResponseEntity<Void> deleteTextMessagesInChatroom(@PathVariable String chatroomId) {
         try {
@@ -180,7 +180,7 @@ public class ChatMessageController {
         }
     }
 
-    // 🎯 新增：只刪除聊天室的畫布訊息
+    // 只刪除聊天室的畫布訊息
     @DeleteMapping("/chatroom/{chatroomId}/drawing")
     public ResponseEntity<Void> deleteDrawingMessagesInChatroom(@PathVariable String chatroomId) {
         try {
