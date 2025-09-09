@@ -11,6 +11,7 @@ import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 @Service
 public class DrawingAnalysisChatServiceImpl {
@@ -20,7 +21,8 @@ public class DrawingAnalysisChatServiceImpl {
         this.registry = registry;
     }
 
-    public String processChat(MultipartFile file, String userMessage,String sessionId) throws IOException {
+    // 原本的非串流方法
+    public String processChat(MultipartFile file, String userMessage, String sessionId) throws IOException {
         GenerateContentResponse response;
         Chat drawingAnalysisChatSession = registry.getSession(sessionId);
 
@@ -42,7 +44,6 @@ public class DrawingAnalysisChatServiceImpl {
             return "AI處理錯誤";
         }
     }
-
     public SseEmitter processChatStream(MultipartFile file, String userMessage, String sessionId) throws IOException {
         Chat chatSession = registry.getSession(sessionId);
         String processedText = ChatInputProcessor.processText(userMessage, "請分析這張圖片");

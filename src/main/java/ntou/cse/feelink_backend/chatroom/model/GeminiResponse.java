@@ -48,6 +48,5 @@ public class GeminiResponse {
     }
 }
 
-// Request DTO
 
 

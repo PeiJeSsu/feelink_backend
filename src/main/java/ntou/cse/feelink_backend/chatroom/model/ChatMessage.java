@@ -1,46 +1,33 @@
 package ntou.cse.feelink_backend.chatroom.model;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.util.Date;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Document(collection = "chat_messages")
 public class ChatMessage {
-    private Long id;
-    private String content;
-    private boolean isUser;
-    private String sessionId;
+    @Id
+    private String messageId;
 
-    public ChatMessage() {
-        this.content = "";
-        this.isUser = false;
-        this.sessionId = "";
-    }
+    @Field("chatroomId")
+    private String chatroomId;
 
-    public Long getId() {
-        return id;
-    }
+    @Field("isUser")
+    private Boolean isUser; // true為user，false為AI
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Field("isDrawingData")
+    private Boolean isDrawingData; // true為畫布資料，false為一般訊息
 
-    public String getContent() {
-        return content;
-    }
+    @Field("content")
+    private String content; // 為訊息或畫布資料
 
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public boolean isUser() {
-        return isUser;
-    }
-
-    public void setUser(boolean user) {
-        isUser = user;
-    }
-
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(String sessionId) {
-        this.sessionId = sessionId;
-    }
+    @Field("sentAt")
+    private Date sentAt;
 }
