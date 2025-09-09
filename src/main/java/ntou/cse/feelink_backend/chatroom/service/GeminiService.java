@@ -1,140 +1,136 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.genai.Client;
+import com.google.genai.types.*;
 import ntou.cse.feelink_backend.chatroom.model.GeminiResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.util.Base64;
 
 @Service
 public class GeminiService {
 
-    @Value("${GEMINI_API_KEY}")
-    private String apiKey;
+    private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
+    private final Client client;
 
-    private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
-
-    public GeminiService() {
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
+    public GeminiService(Client client) {
+        this.client = client;
     }
 
     public GeminiResponse generateImage(String prompt, String canvasData, String mode) {
         try {
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=" + apiKey;
-            String systemInstructions = "";
-            if ("drawing".equals(mode)) {
-                systemInstructions = String.format("""
-                    請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等），然後，請完全採用這種分析出來的風格來編輯原圖。
+            String systemInstructions = buildPromptByMode(prompt, mode);
+            byte[] imageBytes= null;
+            if (canvasData != null && !canvasData.isEmpty()) {
+                String base64Data = canvasData;
+                if (base64Data.startsWith("data:image/")) {
+                    base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
+                }
+                imageBytes = Base64.getDecoder().decode(base64Data);
+            }
+
+            Content content = Content.fromParts(
+                    Part.fromText(systemInstructions+"\n按照指示加上東西或修改，不詢問如何增加元素，一定要回應圖片與新增東西，並且去背。"),
+                    Part.fromBytes(imageBytes,"image/jpeg")
+            );
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .responseModalities("TEXT", "IMAGE")
+                    .temperature(0.8f)
+                    .candidateCount(1)
+                    .systemInstruction(Content.fromParts(Part.fromText(systemInstructions)))
+                    .build();
+
+            GenerateContentResponse response = client.models.generateContent(
+                    "gemini-2.5-flash-image-preview",
+                    content,
+                    config
+            );
+            return convertToGeminiResponse(response);
+
+        } catch (Exception e) {
+            logger.error("圖片生成失敗: {}", e.getMessage(), e);
+
+            GeminiResponse result = new GeminiResponse();
+            result.setSuccess(false);
+            result.setError("圖片生成失敗: " + e.getMessage());
+            return result;
+        }
+    }
+
+    private String buildPromptByMode(String prompt, String mode) {
+        if ("drawing".equals(mode)) {
+            return String.format("""
+                    詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等），然後完全採用這種分析出來的風格來編輯原圖。
                     如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
                     你的任務如下：
                     - 如果我要求添加元素，你就只畫上我指定的東西。
                     - 如果我要求移除元素，你就只刪除我指定的東西。
                     - 如果我要求更改現有元素的位置、大小或特徵等，你就依照我的描述進行修改。
+                    - 不要詢問如何增加元素，一定要回應圖片。
                     %s
                     除了我明確指示要添加、移除或更改的部分之外，請務必完整保留原圖的所有其他內容。維持一樣的背景。
-                    請一定要生成圖片，並且不要在圖片上生成文字，請用繁體中文回答。
+                    一定要回應圖片，並且不要在圖片上生成文字，用繁體中文回答。
                     """, prompt);
-            }
-            else if ("generateObject".equals(mode)) {
-                systemInstructions = String.format("""
-                    請詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等）。然後，請完全採用這種分析出來的風格。
+        }
+        else if ("generateObject".equals(mode)) {
+            return String.format("""
+                    詳細分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等）。然後完全採用這種分析出來的風格。
                     如果無法從圖片中看出風格，例如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
                     %s。
                     圖片中只能有我要你畫的東西，背景必須是純白色，不能有任何其他元素。
-                    請一定要生成圖片，並且不要在圖片上生成文字，請用繁體中文回答。
+                    一定要回應圖片，且不要在圖片上生成文字，用繁體中文回答。
                     """, prompt);
-            }
-
-            // 構建請求體
-            Map<String, Object> requestBody = new HashMap<>();
-            Map<String, Object> generationConfig = new HashMap<>();
-            generationConfig.put("responseModalities", Arrays.asList("Text", "Image"));
-            requestBody.put("generationConfig", generationConfig);
-
-            // 構建內容部分
-            List<Map<String, Object>> contents = new ArrayList<>();
-            Map<String, Object> content = new HashMap<>();
-            content.put("role", "user");
-
-            List<Map<String, Object>> parts = new ArrayList<>();
-
-            // 如果有畫布數據，添加圖片部分
-            if (canvasData != null && !canvasData.isEmpty()) {
-                Map<String, Object> imagePart = new HashMap<>();
-                Map<String, Object> inlineData = new HashMap<>();
-                inlineData.put("mimeType", "image/png");
-                inlineData.put("data", canvasData);
-                imagePart.put("inlineData", inlineData);
-                parts.add(imagePart);
-            }
-
-            // 添加文本部分
-            Map<String, Object> textPart = new HashMap<>();
-            textPart.put("text", systemInstructions);
-            parts.add(textPart);
-
-            content.put("parts", parts);
-            contents.add(content);
-            requestBody.put("contents", contents);
-
-            // 設置請求頭
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-            // 發送請求
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-
-            // 解析回應
-            return parseGeminiResponse(response.getBody());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating image: " + e.getMessage(), e);
+        } else {
+            return prompt + "，生成圖片並用繁體中文回應";
         }
     }
 
-    private GeminiResponse parseGeminiResponse(String responseBody) {
+    private GeminiResponse convertToGeminiResponse(GenerateContentResponse response) {
+        GeminiResponse result = new GeminiResponse();
         try {
-            JsonNode root = objectMapper.readTree(responseBody);
-            JsonNode candidates = root.get("candidates");
+            StringBuilder textBuilder = new StringBuilder();
+            boolean hasImage = false;
+            if (response.candidates().isPresent() && !response.candidates().get().isEmpty()) {
+                var candidate = response.candidates().get().get(0);
 
-            if (candidates != null && candidates.isArray() && candidates.size() > 0) {
-                JsonNode candidate = candidates.get(0);
-                JsonNode content = candidate.get("content");
-                JsonNode parts = content.get("parts");
+                if (candidate.content().isPresent()) {
+                    var content = candidate.content().get();
 
-                GeminiResponse result = new GeminiResponse();
-                result.setSuccess(true);
-                StringBuilder messageBuilder = new StringBuilder();
+                    if (content.parts().isPresent()) {
+                        var parts = content.parts().get();
+                        for (var part : parts) {
+                            if (part.text().isPresent()) {
+                                textBuilder.append(part.text().get());
+                            }
+                            if (part.inlineData().isPresent()) {
+                                var inlineData = part.inlineData().get();
 
-                if (parts != null && parts.isArray()) {
-                    for (JsonNode part : parts) {
-                        if (part.has("text")) {
-                            messageBuilder.append(part.get("text").asText());
-                        }
-                        if (part.has("inlineData")) {
-                            JsonNode inlineData = part.get("inlineData");
-                            if (inlineData.has("data")) {
-                                result.setImageData(inlineData.get("data").asText());
+                                if (inlineData.data().isPresent()) {
+                                    byte[] imageData = inlineData.data().get();
+
+                                    if (imageData != null && imageData.length > 0) {
+                                        String base64Data = Base64.getEncoder().encodeToString(imageData);
+                                        result.setImageData(base64Data);
+                                        hasImage = true;
+                                        logger.info(" 成功取得圖片，大小: {} bytes", imageData.length);
+                                    }
+                                }
                             }
                         }
                     }
                 }
-
-                result.setMessage(messageBuilder.toString());
-                return result;
             }
-
-            throw new RuntimeException("Invalid response format from Gemini API");
-
+            String textContent = textBuilder.toString();
+            result.setMessage(textContent.isEmpty() ? "圖片處理完成" : textContent);
+            result.setSuccess(true);
+            logger.info("轉換完成 - 文字: {}, 圖片: {}", !textContent.isEmpty(), hasImage);
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing Gemini response: " + e.getMessage(), e);
+            logger.error("處理回應失敗: {}", e.getMessage(), e);
+            result.setSuccess(false);
+            result.setError("處理回應失敗: " + e.getMessage());
         }
+
+        return result;
     }
 }

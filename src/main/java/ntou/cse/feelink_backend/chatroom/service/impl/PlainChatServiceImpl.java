@@ -21,37 +21,19 @@ public class PlainChatServiceImpl {
         this.messageFormattingService = messageFormattingService;
     }
 
-    public ChatMessage reply(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) {
-        System.out.println("開始處理請求: " + userMessage + ", sessionId: " + sessionId);
-
+    public ChatMessage reply(String userMessage, String sessionId,Integer conversationCount, Boolean hasDefaultQuestion) {
         Chat chatSession = registry.getSession(sessionId);
-        String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
-        System.out.println("格式化後的訊息: " + formattedMessage);
-
+        String formattedMessage =messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         ChatMessage aiMsg = new ChatMessage();
         aiMsg.setUser(false);
         aiMsg.setSessionId(sessionId);
 
         try {
             GenerateContentResponse resp = chatSession.sendMessage(formattedMessage);
-            System.out.println("收到回應物件: " + resp.text());
-
-            String responseText = resp.text();
-            System.out.println("回應文字: " + responseText);
-
-            if (responseText != null && !responseText.trim().isEmpty()) {
-                aiMsg.setContent(responseText);
-            } else {
-                System.out.println("回應為空，可能被安全過濾器阻擋");
-                aiMsg.setContent("抱歉，我無法回應這個問題");
-            }
-
+            aiMsg.setContent(resp.text());
         } catch (Exception e) {
-            System.err.println("AI處理錯誤: " + e.getMessage());
-            e.printStackTrace();
-            aiMsg.setContent("AI處理錯誤: " + e.getMessage());
+            aiMsg.setContent("AI處理錯誤");
         }
-
         return aiMsg;
     }
 
