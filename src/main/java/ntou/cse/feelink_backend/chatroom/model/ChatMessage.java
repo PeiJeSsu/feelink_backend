@@ -30,4 +30,5 @@ public class ChatMessage {
 
     @Field("sentAt")
     private Date sentAt;
+
 }

@@ -22,7 +22,7 @@ public class PlainChatServiceImpl {
     private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
     private final ChatMessageService chatMessageService;
 
-    public PlainChatServiceImpl(ChatSessionRegistry registry, 
+    public PlainChatServiceImpl(ChatSessionRegistry registry,
                                MessageFormattingService messageFormattingService,
                                EmotionPredictionChatServiceImpl emotionPredictionChatService,
                                ChatMessageService chatMessageService) {
@@ -32,14 +32,12 @@ public class PlainChatServiceImpl {
         this.chatMessageService = chatMessageService;
     }
 
-    public ChatMessage reply(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) {
-        Chat chatSession = registry.getSession(sessionId);
-        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(sessionId);
+    public ChatMessage reply(String userMessage, String chatroomId, Integer conversationCount, Boolean hasDefaultQuestion) {
+        Chat chatSession = registry.getSession(chatroomId);
+        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         
         ChatMessage aiMsg = new ChatMessage();
-        aiMsg.setUser(false);
-        aiMsg.setSessionId(sessionId);
         
         try {
             GenerateContentResponse resp = chatSession.sendMessage(formattedMessage);
@@ -54,8 +52,8 @@ public class PlainChatServiceImpl {
     /**
      * 基本串流方法 - 不含個性和資料庫存儲
      */
-    public SseEmitter replyStream(String userMessage, String sessionId, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
-        Chat chatSession = registry.getSession(sessionId);
+    public SseEmitter replyStream(String userMessage, String chatroomId, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
+        Chat chatSession = registry.getSession(chatroomId);
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         SseEmitter emitter = new SseEmitter();
 
@@ -79,21 +77,21 @@ public class PlainChatServiceImpl {
     /**
      * 含資料庫存儲的串流方法
      */
-    public SseEmitter replyStreamWithDatabase(String userMessage, String sessionId,
+    public SseEmitter replyStreamWithDatabase(String userMessage, String chatroomId,
                                               Integer conversationCount, Boolean hasDefaultQuestion,
                                               String aiMessageId) throws IOException {
-        return processStreamWithAllFeatures(userMessage, sessionId, conversationCount, hasDefaultQuestion, "default", aiMessageId);
+        return processStreamWithAllFeatures(userMessage, chatroomId, conversationCount, hasDefaultQuestion, "default", aiMessageId);
     }
 
     /**
      * 完整功能的串流方法 - 含個性、情緒預測和資料庫存儲
      */
-    public SseEmitter processStreamWithAllFeatures(String userMessage, String sessionId,
+    public SseEmitter processStreamWithAllFeatures(String userMessage, String chatroomId,
                                                     Integer conversationCount, Boolean hasDefaultQuestion,
                                                     String personality, String aiMessageId) throws IOException {
 
         // 取得聊天歷史提供上下文
-        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(sessionId);
+        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
 
         // 進行情緒預測
         String emotionPrediction = "";
@@ -119,9 +117,9 @@ public class PlainChatServiceImpl {
         // 根據個性參數選擇會話
         final Chat chatSession;
         if (personality != null && !"default".equals(personality)) {
-            chatSession = registry.getSession(sessionId, personality);
+            chatSession = registry.getSession(chatroomId, personality);
         } else {
-            chatSession = registry.getSession(sessionId);
+            chatSession = registry.getSession(chatroomId);
         }
 
         final String finalAiMessageId = aiMessageId;
