@@ -1,5 +1,9 @@
 package ntou.cse.feelink_backend.config;
 
+import ntou.cse.feelink_backend.config.personality.BasePersonalityPrompt;
+import ntou.cse.feelink_backend.config.personality.CreativePersonalityPrompt;
+import ntou.cse.feelink_backend.config.personality.CuriousPersonalityPrompt;
+import ntou.cse.feelink_backend.config.personality.WarmPersonalityPrompt;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import com.google.common.collect.ImmutableList;
@@ -18,8 +22,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GeminiConfiguration {
-    private static final String INSTRUCTION_FOR_ANALYSIS = "如果有給予你圖片，請分析繪畫，以繁體中文說明它可能反映的使用者情緒。從心理學的角度，解釋繪畫中的哪些特徵可能與特定的情緒相關聯。"
-            +"你的回應應該引導使用者思考這些可能的聯繫，鼓勵他們探索自己的內心感受，而不是直接給出情緒標籤。請避免使用過於強烈的斷言，並保持解釋性的語氣，解釋為何推論出，並給予使用者陪伴感。也輪流擔任聆聽者與引導者。不要透漏有先前的情緒預測結果。";
 
     private static final String Rubric = "# 對話情緒觸發 Rubric（1 安全 → 5 危急）\n" +
             "\n" +
@@ -30,8 +32,10 @@ public class GeminiConfiguration {
             "| 3 | 中度 | 多次中度負面詞、明確求助、重複困擾 3–4 次、回覆變短 | \n" +
             "| 4 | 重度 | 頻繁重度負面詞、迫切求助、強烈自我否定、回覆多為「是 / 否」等簡短語句 |\n" +
             "| 5 | 危急 | 明確自殺 / 自傷意念或計畫、互動極低 | ";
+
     private static final String INSTRUCTION_FOR_PREDICTION  = "你是情緒預測師，根據使用者最近的對話內容，判斷其情緒觸發等級。\n" + Rubric +
             "\n分析使用者的對話內容，判斷屬於哪一級（1-5），回傳數字即可。同時命中多級，取最高級。";
+
     private static final String AVOID = """
             根據系統提供的危機等級（1-5）調整回應，不可擅自提供預設以外的資源，一定要遵從給予方式。
             1級(安全)：正常陪伴對話，鼓勵創作
@@ -108,13 +112,14 @@ public class GeminiConfiguration {
 
     @Bean("drawingAnalysisConfig")
     public GenerateContentConfig drawingAnalysisConfig(ImmutableList<SafetySetting> safetySettings) {
+        BasePersonalityPrompt basePrompt = new BasePersonalityPrompt();
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
                 .maxOutputTokens(512)
                 .safetySettings(safetySettings)
-                .systemInstruction(Content.fromParts(Part.fromText(INSTRUCTION_FOR_ANALYSIS)))
+                .systemInstruction(Content.fromParts(Part.fromText(basePrompt.getSystemInstruction())))
                 .tools(googleSearchTool)
                 .build();
     }
@@ -124,6 +129,7 @@ public class GeminiConfiguration {
         return GenerateContentConfig.builder()
                 .temperature(0.1f)
                 .topP(0.6f)
+                .safetySettings(safetySettings)
                 .candidateCount(1)
                 .maxOutputTokens(20)
                 .systemInstruction(Content.fromParts(Part.fromText(INSTRUCTION_FOR_PREDICTION)))
@@ -132,39 +138,42 @@ public class GeminiConfiguration {
 
     @Bean("creativeConfig")
     public GenerateContentConfig creativeConfig(ImmutableList<SafetySetting> safetySettings) {
+        CreativePersonalityPrompt creativePrompt = new CreativePersonalityPrompt();
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
                 .maxOutputTokens(512)
                 .safetySettings(safetySettings)
-                .systemInstruction(Content.fromParts(Part.fromText(CREATIVE_INSTRUCTION)))
+                .systemInstruction(Content.fromParts(Part.fromText(creativePrompt.getSystemInstruction() + AVOID)))
                 .tools(googleSearchTool)
                 .build();
     }
 
     @Bean("curiousAnalystConfig")
     public GenerateContentConfig curiousAnalystConfig(ImmutableList<SafetySetting> safetySettings) {
+        CuriousPersonalityPrompt curiousPrompt = new CuriousPersonalityPrompt();
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
                 .maxOutputTokens(512)
                 .safetySettings(safetySettings)
-                .systemInstruction(Content.fromParts(Part.fromText(CURIOUS_ANALYST_INSTRUCTION)))
+                .systemInstruction(Content.fromParts(Part.fromText(curiousPrompt.getSystemInstruction() + AVOID)))
                 .tools(googleSearchTool)
                 .build();
     }
 
     @Bean("warmMentorConfig")
     public GenerateContentConfig warmMentorConfig(ImmutableList<SafetySetting> safetySettings) {
+        WarmPersonalityPrompt warmPrompt = new WarmPersonalityPrompt();
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
                 .maxOutputTokens(512)
                 .safetySettings(safetySettings)
-                .systemInstruction(Content.fromParts(Part.fromText(WARM_MENTOR_INSTRUCTION)))
+                .systemInstruction(Content.fromParts(Part.fromText(warmPrompt.getSystemInstruction() + AVOID)))
                 .tools(googleSearchTool)
                 .build();
     }
