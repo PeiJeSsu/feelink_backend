@@ -1,10 +1,10 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ContentMaker;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.genai.Chat;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
@@ -12,7 +12,6 @@ import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -114,7 +113,7 @@ public class ChatServiceImpl implements ChatService {
                 lock.lock();
 
                 // 獲取 ChatSession（每次都重新獲取以確保狀態正確）
-                ChatSession chatSession;
+                Chat chatSession;
                 if (finalPersonality != null && !"default".equals(finalPersonality)) {
                     chatSession = registry.getSession(finalChatroomId, finalPersonality);
                 } else {
@@ -122,7 +121,7 @@ public class ChatServiceImpl implements ChatService {
                 }
 
                 String processedText = finalAnalysisPrompt;
-                Object processedImage = null;
+                Part processedImage = ChatInputProcessor.processImage(file);
 
                 // 處理圖片
                 if (finalFile != null && !finalFile.isEmpty()) {
@@ -136,8 +135,8 @@ public class ChatServiceImpl implements ChatService {
                 // 發送請求並處理回應串流
                 ResponseStream<GenerateContentResponse> responseStream;
                 if (processedImage != null) {
-                    responseStream = chatSession.sendMessageStream(
-                            ContentMaker.fromMultiModalData(processedImage, processedText));
+                    Content content = Content.fromParts(Part.fromText(processedText), processedImage);
+                    responseStream = chatSession.sendMessageStream(content);
                 } else {
                     responseStream = chatSession.sendMessageStream(processedText);
                 }
@@ -147,7 +146,7 @@ public class ChatServiceImpl implements ChatService {
                 try {
                     // 使用增強型 for 迴圈完全消費串流
                     for (GenerateContentResponse response : responseStream) {
-                        String token = ResponseHandler.getText(response);
+                        String token = response.text();
                         if (token != null && !token.isEmpty()) {
                             fullResponse.append(token);
                             try {

@@ -1,14 +1,12 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.genai.Chat;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.GenerateContentResponse;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
 import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -19,36 +17,35 @@ import java.util.Optional;
 @Service
 public class PlainChatServiceImpl {
 
-    @Autowired
-    private ChatSessionRegistry registry;
+    private final ChatSessionRegistry registry;
+    private final MessageFormattingService messageFormattingService;
+    private final EmotionPredictionChatServiceImpl emotionPredictionChatService;
+    private final ChatMessageService chatMessageService;
 
-    @Autowired
-    private MessageFormattingService messageFormattingService;
+    public PlainChatServiceImpl(ChatSessionRegistry registry,
+                               MessageFormattingService messageFormattingService,
+                               EmotionPredictionChatServiceImpl emotionPredictionChatService,
+                               ChatMessageService chatMessageService) {
+        this.registry = registry;
+        this.messageFormattingService = messageFormattingService;
+        this.emotionPredictionChatService = emotionPredictionChatService;
+        this.chatMessageService = chatMessageService;
+    }
 
-    @Autowired
-    private EmotionPredictionChatServiceImpl emotionPredictionChatService;
-
-    @Autowired
-    private ChatMessageService chatMessageService;
-
-    /**
-     * 原本的非串流方法 - 保持向後兼容性
-     */
     public ChatMessage reply(String userMessage, String chatroomId, Integer conversationCount, Boolean hasDefaultQuestion) {
-        ChatSession chatSession = registry.getSession(chatroomId);
+        Chat chatSession = registry.getSession(chatroomId);
         List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
-
+        
         ChatMessage aiMsg = new ChatMessage();
-        aiMsg.setIsUser(false);
-
+        
         try {
             GenerateContentResponse resp = chatSession.sendMessage(formattedMessage);
-            aiMsg.setContent(ResponseHandler.getText(resp));
+            aiMsg.setContent(resp.text());
         } catch (Exception e) {
             aiMsg.setContent("AI處理錯誤: " + e.getMessage());
         }
-
+        
         return aiMsg;
     }
 
@@ -56,7 +53,7 @@ public class PlainChatServiceImpl {
      * 基本串流方法 - 不含個性和資料庫存儲
      */
     public SseEmitter replyStream(String userMessage, String chatroomId, Integer conversationCount, Boolean hasDefaultQuestion) throws IOException {
-        ChatSession chatSession = registry.getSession(chatroomId);
+        Chat chatSession = registry.getSession(chatroomId);
         String formattedMessage = messageFormattingService.getFullMessage(userMessage, conversationCount, hasDefaultQuestion);
         SseEmitter emitter = new SseEmitter();
 
@@ -64,7 +61,7 @@ public class PlainChatServiceImpl {
             try {
                 ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(formattedMessage);
                 for (GenerateContentResponse response : responseStream) {
-                    String token = ResponseHandler.getText(response);
+                    String token = response.text();
                     if (token != null && !token.isEmpty()) {
                         emitter.send(SseEmitter.event().data(token));
                     }
@@ -77,13 +74,18 @@ public class PlainChatServiceImpl {
         return emitter;
     }
 
-
+    /**
+     * 含資料庫存儲的串流方法
+     */
     public SseEmitter replyStreamWithDatabase(String userMessage, String chatroomId,
                                               Integer conversationCount, Boolean hasDefaultQuestion,
                                               String aiMessageId) throws IOException {
         return processStreamWithAllFeatures(userMessage, chatroomId, conversationCount, hasDefaultQuestion, "default", aiMessageId);
     }
 
+    /**
+     * 完整功能的串流方法 - 含個性、情緒預測和資料庫存儲
+     */
     public SseEmitter processStreamWithAllFeatures(String userMessage, String chatroomId,
                                                     Integer conversationCount, Boolean hasDefaultQuestion,
                                                     String personality, String aiMessageId) throws IOException {
@@ -113,7 +115,7 @@ public class PlainChatServiceImpl {
         }
 
         // 根據個性參數選擇會話
-        final ChatSession chatSession;
+        final Chat chatSession;
         if (personality != null && !"default".equals(personality)) {
             chatSession = registry.getSession(chatroomId, personality);
         } else {
@@ -129,7 +131,7 @@ public class PlainChatServiceImpl {
                 ResponseStream<GenerateContentResponse> responseStream = chatSession.sendMessageStream(analysisPrompt);
 
                 for (GenerateContentResponse response : responseStream) {
-                    String token = ResponseHandler.getText(response);
+                    String token = response.text();
                     if (token != null && !token.isEmpty()) {
                         fullResponse.append(token);
 

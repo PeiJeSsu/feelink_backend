@@ -1,7 +1,8 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.genai.Client;
+import com.google.genai.Chat;
+import com.google.genai.types.GenerateContentConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -10,34 +11,38 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class ChatSessionRegistry {
-    private final GenerativeModel drawingAnalysisModel;
-    private final GenerativeModel creativeModel;
-    private final GenerativeModel curiousAnalystModel;
-    private final GenerativeModel warmMentorModel;
-    private final ConcurrentHashMap<String, ChatSession> pool = new ConcurrentHashMap<>();
+    private final Client client;
+    private final GenerateContentConfig drawingAnalysisConfig;
+    private final GenerateContentConfig creativeConfig;
+    private final GenerateContentConfig curiousAnalystConfig;
+    private final GenerateContentConfig warmMentorConfig;
+    private final ConcurrentHashMap<String, Chat> pool = new ConcurrentHashMap<>();
 
     @Autowired
     public ChatSessionRegistry(
-            @Qualifier("drawingAnalysisModel") GenerativeModel drawingAnalysisModel,
-            @Qualifier("creativeModel") GenerativeModel creativeModel,
-            @Qualifier("curiousAnalystModel") GenerativeModel curiousAnalystModel,
-            @Qualifier("warmMentorModel") GenerativeModel warmMentorModel) {
-        this.drawingAnalysisModel = drawingAnalysisModel;
-        this.creativeModel = creativeModel;
-        this.curiousAnalystModel = curiousAnalystModel;
-        this.warmMentorModel = warmMentorModel;
+            Client client,
+            @Qualifier("drawingAnalysisConfig") GenerateContentConfig drawingAnalysisConfig,
+            @Qualifier("creativeConfig") GenerateContentConfig creativeConfig,
+            @Qualifier("curiousAnalystConfig") GenerateContentConfig curiousAnalystConfig,
+            @Qualifier("warmMentorConfig") GenerateContentConfig warmMentorConfig) {
+        this.client = client;
+        this.drawingAnalysisConfig = drawingAnalysisConfig;
+        this.creativeConfig = creativeConfig;
+        this.curiousAnalystConfig = curiousAnalystConfig;
+        this.warmMentorConfig = warmMentorConfig;
     }
 
-    public ChatSession getSession(String sessionId) {
+    public Chat getSession(String sessionId) {
         return getSession(sessionId, "default");
     }
-    public ChatSession getSession(String sessionId, String personality) {
+
+    public Chat getSession(String sessionId, String personality) {
         String key = sessionId + "_" + personality;
-        ChatSession session = pool.get(key);
+        Chat session = pool.get(key);
         if (session == null) {
-            GenerativeModel model = getModelByPersonality(personality);
-            ChatSession newSession = new ChatSession(model);
-            ChatSession existed = pool.putIfAbsent(key, newSession);
+            GenerateContentConfig config = getConfigByPersonality(personality);
+            Chat newSession = client.chats.create("gemini-2.5-flash-lite", config);
+            Chat existed = pool.putIfAbsent(key, newSession);
             if (existed != null) {
                 session = existed;
             } else {
@@ -47,16 +52,16 @@ public class ChatSessionRegistry {
         return session;
     }
 
-    private GenerativeModel getModelByPersonality(String personality) {
+    private GenerateContentConfig getConfigByPersonality(String personality) {
         switch (personality.toLowerCase()) {
             case "creative":
-                return creativeModel;
+                return creativeConfig;
             case "curious":
-                return curiousAnalystModel;
+                return curiousAnalystConfig;
             case "warm":
-                return warmMentorModel;
+                return warmMentorConfig;
             default:
-                return drawingAnalysisModel;
+                return drawingAnalysisConfig;
         }
     }
 }

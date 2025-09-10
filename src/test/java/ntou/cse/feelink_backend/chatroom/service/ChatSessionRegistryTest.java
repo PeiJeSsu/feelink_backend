@@ -1,7 +1,5 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -12,10 +10,7 @@ import static org.mockito.Mockito.*;
 
 class ChatSessionRegistryTest {
 
-    @Mock GenerativeModel drawingAnalysisModel;
-    @Mock GenerativeModel creativeModel;
-    @Mock GenerativeModel curiousAnalystModel;
-    @Mock GenerativeModel warmMentorModel;
+
 
     private ChatSessionRegistry registry;
     @BeforeEach

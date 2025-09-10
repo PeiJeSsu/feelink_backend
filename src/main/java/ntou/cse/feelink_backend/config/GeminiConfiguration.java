@@ -1,11 +1,18 @@
 package ntou.cse.feelink_backend.config;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import com.google.cloud.vertexai.VertexAI;
-import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ContentMaker;
-import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.common.collect.ImmutableList;
+import com.google.genai.Client;
+import com.google.genai.types.SafetySetting;
+import com.google.genai.types.HarmBlockThreshold;
+import com.google.genai.types.HarmCategory;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.Chat;
+import com.google.genai.types.Content;
+import com.google.genai.types.Part;
+import com.google.genai.types.Tool;
+import com.google.genai.types.GoogleSearch;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -76,80 +83,93 @@ public class GeminiConfiguration {
     private String location;
 
     @Bean
-    public VertexAI vertexAI() {
-        return new VertexAI(projectId,location);
-    }
-
-    @Bean
-    public GenerationConfig generationConfigForAnalysis() {
-        return GenerationConfig.newBuilder()
-                .setTemperature(0.8f)
-                .setTopP(0.8f)
-                .setMaxOutputTokens(512)
+    public Client client() {
+        return  Client.builder()
+                .project(projectId)
+                .location(location)
+                .vertexAI(true)
                 .build();
     }
 
     @Bean
-    public GenerationConfig generationConfigForPrediction() {
-        return GenerationConfig.newBuilder()
-                .setTemperature(0.1f)
-                .setTopP(0.6f)
-                .setMaxOutputTokens(20)
+    public ImmutableList<SafetySetting> safetySettings() {
+        return ImmutableList.of(
+                SafetySetting.builder()
+                        .category(HarmCategory.Known.HARM_CATEGORY_HATE_SPEECH)
+                        .threshold(HarmBlockThreshold.Known.BLOCK_ONLY_HIGH)
+                        .build(),
+                SafetySetting.builder()
+                        .category(HarmCategory.Known.HARM_CATEGORY_DANGEROUS_CONTENT)
+                        .threshold(HarmBlockThreshold.Known.BLOCK_LOW_AND_ABOVE)
+                        .build());
+    }
+
+    Tool googleSearchTool = Tool.builder().googleSearch(GoogleSearch.builder()).build();
+
+    @Bean("drawingAnalysisConfig")
+    public GenerateContentConfig drawingAnalysisConfig(ImmutableList<SafetySetting> safetySettings) {
+        return GenerateContentConfig.builder()
+                .temperature(0.8f)
+                .topP(0.8f)
+                .candidateCount(1)
+                .maxOutputTokens(512)
+                .safetySettings(safetySettings)
+                .systemInstruction(Content.fromParts(Part.fromText(INSTRUCTION_FOR_ANALYSIS)))
+                .tools(googleSearchTool)
                 .build();
     }
 
-    @Bean
-    public GenerativeModel drawingAnalysisModel(VertexAI vertexAI, GenerationConfig generationConfigForAnalysis) {
-        return new GenerativeModel.Builder()
-                .setModelName("gemini-1.5-pro-002")
-                .setVertexAi(vertexAI)
-                .setGenerationConfig(generationConfigForAnalysis)
-                .setSystemInstruction(ContentMaker.fromString(INSTRUCTION_FOR_ANALYSIS))
+    @Bean("emotionPredictorConfig")
+    public GenerateContentConfig emotionPredictorConfig(ImmutableList<SafetySetting> safetySettings) {
+        return GenerateContentConfig.builder()
+                .temperature(0.1f)
+                .topP(0.6f)
+                .candidateCount(1)
+                .maxOutputTokens(20)
+                .systemInstruction(Content.fromParts(Part.fromText(INSTRUCTION_FOR_PREDICTION)))
                 .build();
     }
 
-    @Bean
-    public GenerativeModel emotionPredictorModel(VertexAI vertexAI, GenerationConfig generationConfigForPrediction) {
-        return new GenerativeModel.Builder()
-                .setModelName("gemini-1.5-pro-002")
-                .setVertexAi(vertexAI)
-                .setGenerationConfig(generationConfigForPrediction)
-                .setSystemInstruction(ContentMaker.fromString(INSTRUCTION_FOR_PREDICTION ))
+    @Bean("creativeConfig")
+    public GenerateContentConfig creativeConfig(ImmutableList<SafetySetting> safetySettings) {
+        return GenerateContentConfig.builder()
+                .temperature(0.8f)
+                .topP(0.8f)
+                .candidateCount(1)
+                .maxOutputTokens(512)
+                .safetySettings(safetySettings)
+                .systemInstruction(Content.fromParts(Part.fromText(CREATIVE_INSTRUCTION)))
+                .tools(googleSearchTool)
                 .build();
     }
 
-    @Bean
-    public GenerativeModel creativeModel(VertexAI vertexAI, GenerationConfig generationConfigForAnalysis) {
-        return new GenerativeModel.Builder()
-                .setModelName("gemini-1.5-pro-002")
-                .setVertexAi(vertexAI)
-                .setGenerationConfig(generationConfigForAnalysis)
-                .setSystemInstruction(ContentMaker.fromString(CREATIVE_INSTRUCTION))
+    @Bean("curiousAnalystConfig")
+    public GenerateContentConfig curiousAnalystConfig(ImmutableList<SafetySetting> safetySettings) {
+        return GenerateContentConfig.builder()
+                .temperature(0.8f)
+                .topP(0.8f)
+                .candidateCount(1)
+                .maxOutputTokens(512)
+                .safetySettings(safetySettings)
+                .systemInstruction(Content.fromParts(Part.fromText(CURIOUS_ANALYST_INSTRUCTION)))
+                .tools(googleSearchTool)
                 .build();
     }
 
-    @Bean
-    public GenerativeModel curiousAnalystModel(VertexAI vertexAI, GenerationConfig generationConfigForAnalysis) {
-        return new GenerativeModel.Builder()
-                .setModelName("gemini-1.5-pro-002")
-                .setVertexAi(vertexAI)
-                .setGenerationConfig(generationConfigForAnalysis)
-                .setSystemInstruction(ContentMaker.fromString(CURIOUS_ANALYST_INSTRUCTION))
+    @Bean("warmMentorConfig")
+    public GenerateContentConfig warmMentorConfig(ImmutableList<SafetySetting> safetySettings) {
+        return GenerateContentConfig.builder()
+                .temperature(0.8f)
+                .topP(0.8f)
+                .candidateCount(1)
+                .maxOutputTokens(512)
+                .safetySettings(safetySettings)
+                .systemInstruction(Content.fromParts(Part.fromText(WARM_MENTOR_INSTRUCTION)))
+                .tools(googleSearchTool)
                 .build();
     }
-
     @Bean
-    public GenerativeModel warmMentorModel(VertexAI vertexAI, GenerationConfig generationConfigForAnalysis) {
-        return new GenerativeModel.Builder()
-                .setModelName("gemini-1.5-pro-002")
-                .setVertexAi(vertexAI)
-                .setGenerationConfig(generationConfigForAnalysis)
-                .setSystemInstruction(ContentMaker.fromString(WARM_MENTOR_INSTRUCTION))
-                .build();
-    }
-
-    @Bean
-    public ChatSession emotionPredictorChatSession(GenerativeModel emotionPredictorModel) {
-        return new ChatSession(emotionPredictorModel);
+    public Chat emotionPredictorChatSession(Client client, @Qualifier("emotionPredictorConfig") GenerateContentConfig emotionPredictorConfig) {
+        return client.chats.create("gemini-2.5-flash-lite", emotionPredictorConfig);
     }
 }
