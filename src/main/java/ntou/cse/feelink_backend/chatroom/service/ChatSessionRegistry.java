@@ -32,12 +32,12 @@ public class ChatSessionRegistry {
         this.warmMentorConfig = warmMentorConfig;
     }
 
-    public Chat getSession(String sessionId) {
-        return getSession(sessionId, "default");
+    public Chat getSession(String chatroomId) {
+        return getSession(chatroomId, "default");
     }
 
-    public Chat getSession(String sessionId, String personality) {
-        String key = sessionId + "_" + personality;
+    public Chat getSession(String chatroomId, String personality) {
+        String key = chatroomId + "_" + personality;
         Chat session = pool.get(key);
         if (session == null) {
             GenerateContentConfig config = getConfigByPersonality(personality);
@@ -62,6 +62,28 @@ public class ChatSessionRegistry {
                 return warmMentorConfig;
             default:
                 return drawingAnalysisConfig;
+        }
+    }
+
+    public void recreateSession(String chatroomId) {
+        String targetKey = null;
+        for (String key : pool.keySet()) {
+            if (key.startsWith(chatroomId + "_")) {
+                targetKey = key;
+                break;
+            }
+        }
+
+        if (targetKey != null) {
+            String personality = targetKey.substring((chatroomId + "_").length());
+
+            pool.remove(targetKey);
+
+            GenerateContentConfig config = getConfigByPersonality(personality);
+            Chat newSession = client.chats.create("gemini-2.5-flash-lite", config);
+            pool.put(targetKey, newSession);
+
+            System.out.println("重新創建 session: " + targetKey + " (personality: " + personality + ")");
         }
     }
 }

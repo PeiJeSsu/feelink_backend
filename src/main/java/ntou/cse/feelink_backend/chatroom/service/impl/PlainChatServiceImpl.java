@@ -2,7 +2,9 @@ package ntou.cse.feelink_backend.chatroom.service.impl;
 
 import com.google.genai.Chat;
 import com.google.genai.ResponseStream;
+import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
@@ -11,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PlainChatServiceImpl {
@@ -90,9 +94,6 @@ public class PlainChatServiceImpl {
                                                     Integer conversationCount, Boolean hasDefaultQuestion,
                                                     String personality, String aiMessageId) throws IOException {
 
-        // 取得聊天歷史提供上下文
-        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
-
         // 進行情緒預測
         String emotionPrediction = "";
         if (emotionPredictionChatService != null) {
@@ -116,14 +117,37 @@ public class PlainChatServiceImpl {
 
         // 根據個性參數選擇會話
         final Chat chatSession;
+
         if (personality != null && !"default".equals(personality)) {
             chatSession = registry.getSession(chatroomId, personality);
         } else {
             chatSession = registry.getSession(chatroomId);
         }
+        if (chatSession.getHistory(true).isEmpty()) {
+            List<ChatMessage> chatHistory = chatMessageService.getTextMessagesByChatroomId(chatroomId);
+            if (!chatHistory.isEmpty()) {
+                List<Content> contentHistory = new ArrayList<>();
+                for (ChatMessage msg : chatHistory) {
+                    String formattedContent;
+                    if (msg.getIsUser()) {
+                        formattedContent = "使用者: " + msg.getContent();
+                    } else {
+                        formattedContent = "AI: " + msg.getContent();
+                    }
+                    System.out.println(formattedContent);
+                    Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: /n"+formattedContent));
+                    contentHistory.add(content);
+                }
+                try {
+                    chatSession.sendMessage(contentHistory);
+                } catch (Exception e) {
+                    System.err.println("載入聊天歷史失敗: " + e.getMessage());
+                }
+            }
+        }
 
         final String finalAiMessageId = aiMessageId;
-        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // 設置較長的超時時間
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
         new Thread(() -> {
             StringBuilder fullResponse = new StringBuilder();

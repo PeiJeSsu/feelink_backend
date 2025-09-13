@@ -19,6 +19,9 @@ public class ChatMessageService {
     @Autowired
     private ChatMessageRepository chatMessageRepository;
 
+    @Autowired
+    private ChatSessionRegistry chatSessionRegistry;
+
     public ChatMessage saveMessage(ChatMessage message) {
         if (message.getSentAt() == null) {
             message.setSentAt(new Date());
@@ -76,6 +79,7 @@ public class ChatMessageService {
         List<ChatMessage> messages = getMessagesByChatroomId(chatroomId);
         int count = messages.size();
         chatMessageRepository.deleteByChatroomId(chatroomId);
+        chatSessionRegistry.recreateSession(chatroomId);
         logger.info("已刪除訊息");  // 安全日誌
         return count;
     }
