@@ -6,9 +6,8 @@ import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
-import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
+import ntou.cse.feelink_backend.chatroom.service.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -16,7 +15,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class PlainChatServiceImpl {
@@ -93,7 +91,6 @@ public class PlainChatServiceImpl {
     public SseEmitter processStreamWithAllFeatures(String userMessage, String chatroomId,
                                                     Integer conversationCount, Boolean hasDefaultQuestion,
                                                     String personality, String aiMessageId) throws IOException {
-
         // 進行情緒預測
         String emotionPrediction = "";
         if (emotionPredictionChatService != null) {
@@ -123,6 +120,8 @@ public class PlainChatServiceImpl {
         } else {
             chatSession = registry.getSession(chatroomId);
         }
+
+        // AI 取得聊天歷史紀錄
         if (chatSession.getHistory(true).isEmpty()) {
             List<ChatMessage> chatHistory = chatMessageService.getTextMessagesByChatroomId(chatroomId);
             if (!chatHistory.isEmpty()) {
@@ -134,7 +133,7 @@ public class PlainChatServiceImpl {
                     } else {
                         formattedContent = "AI: " + msg.getContent();
                     }
-                    System.out.println(formattedContent);
+                    //System.out.println(formattedContent);
                     Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: /n"+formattedContent));
                     contentHistory.add(content);
                 }

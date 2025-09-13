@@ -3,6 +3,7 @@ package ntou.cse.feelink_backend.chatroom.repository;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -41,6 +42,12 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
 
     // 複合查詢 - AI的文字訊息
     List<ChatMessage> findByChatroomIdAndIsUserFalseAndIsDrawingDataFalseOrderBySentAtAsc(String chatroomId);
+
+    // 查詢某個日期範圍的訊息
+    List<ChatMessage> findByChatroomIdAndSentAtBetweenOrderBySentAtAsc(String chatroomId, Date startDate, Date endDate);
+
+    // 查詢某個日期範圍的文字訊息
+    List<ChatMessage> findByChatroomIdAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(String chatroomId, Date startDate, Date endDate);
 
     // 統計方法
     long countByChatroomId(String chatroomId);

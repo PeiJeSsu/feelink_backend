@@ -5,8 +5,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.genai.types.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,9 +21,40 @@ public class EmotionAnalysisService {
     private final Client client;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    private ChatMessageService chatMessageService;
+
     public EmotionAnalysisService(Client client) {
         this.client = client;
     }
+    public String getTaiwanTodayString() {
+        ZoneId taiwanZone = ZoneId.of("Asia/Taipei");
+        ZonedDateTime now = ZonedDateTime.now(taiwanZone);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return now.format(formatter);
+    }
+
+    public List<String> getTodayChatMessages(String chatroomId) {
+        String today = getTaiwanTodayString();
+
+        List<ChatMessage> todayMessages = chatMessageService.getTextMessagesByDate(chatroomId, today);
+
+        List<String> chatContents = new ArrayList<>();
+        for (ChatMessage msg : todayMessages) {
+            if (msg.getIsUser()) {
+                chatContents.add("使用者: " + msg.getContent());
+            } else {
+                chatContents.add("AI: " + msg.getContent());
+            }
+        }
+        return chatContents;
+    }
+
+    public EmotionScores analyzeTodayEmotions(String chatroomId) {
+        List<String> todayMessages = getTodayChatMessages(chatroomId);
+        return analyzeEmotionsFromChatHistory(chatroomId, todayMessages);
+    }
+
     public EmotionScores analyzeEmotionsFromChatHistory(String chatroomId, List<String> chatMessages) {
         try {
             Schema schema = Schema.builder()
@@ -84,34 +120,13 @@ public class EmotionAnalysisService {
                                 4. 必須以JSON格式回應
                                 5. 明確區分 積極態度 和 開心情緒""")))
                     .build();
-            List<String> t = new ArrayList<>();
-            t.add("今天真的過得很糟糕...早上被主管罵，說我的報告做得不夠仔細\n" +
-                    "感覺整個人都很沮喪，一直想哭\n" +
-                    "中午的時候都不想吃飯，覺得什麼都沒有意義\n" +
-                    "下午坐在辦公室裡，看著電腦螢幕發呆，完全沒有動力\n" +
-                    "但是想想，這樣下去也不是辦法\n" +
-                    "我不能因為一次挫折就放棄自己\n" +
-                    "剛才去便利商店買了一個便當，雖然沒什麼胃口，但還是逼自己吃完了\n" +
-                    "至少要好好照顧身體對吧\n" +
-                    "吃飽之後心情好像稍微好了一點\n" +
-                    "我決定今晚要早點睡，明天重新開始\n" +
-                    "其實仔細想想，主管說的也有道理，我確實可以做得更仔細一些\n" +
-                    "這次的經驗雖然讓我很難受，但也讓我學到了很多\n" +
-                    "我要把這次的教訓記下來，下次做報告的時候更用心\n" +
-                    "現在已經開始規劃明天要怎麼改進工作了\n" +
-                    "覺得明天會是嶄新的一天，我會做得更好的\n" +
-                    "雖然今天哭了，但我相信自己可以克服這個困難\n" +
-                    "明天我要帶著更積極的心態去上班\n" +
-                    "感謝今天的挫折，讓我變得更堅強\n" +
-                    "期待明天的挑戰，我已經準備好了\n");// t.add("我今天很憤怒"); t.add("想哭了"); t.add("但是我會振作起來面對一切");
-            String prompt = buildChatAnalysisPrompt(t);
+            String prompt = buildChatAnalysisPrompt(chatMessages);
 
             GenerateContentResponse response = client.models.generateContent(
                     "gemini-2.5-flash-lite",
                     prompt,
                     config
             );
-            System.out.println("Response: " + response.text());
 
             JsonNode jsonNode = objectMapper.readTree(response.text());
 
@@ -136,7 +151,6 @@ public class EmotionAnalysisService {
 
         return String.format("""
             分析以下完整的聊天記錄，評估使用者整體的情緒狀態：
-            
             === 聊天記錄開始 ===
             %s
             === 聊天記錄結束 ===
@@ -164,7 +178,6 @@ public class EmotionAnalysisService {
             this.optimism = optimism;
         }
 
-        // 增加對應的 getters
         public double getSadness() { return sadness; }
         public double getJoy() { return joy; }
         public double getExcited() { return excited; }
@@ -173,5 +186,115 @@ public class EmotionAnalysisService {
         public double getAnticipation() { return anticipation; }
         public double getOptimism() { return optimism; }
         public double getCalm() { return calm; }
+    }
+
+    public String generateTodayChatSummary(String chatroomId) {
+        String today = getTaiwanTodayString();
+        return generateChatSummary(chatroomId, today);
+    }
+
+    public String generateChatSummary(String chatroomId, String date) {
+        try {
+            List<ChatMessage> chatMessages = chatMessageService.getTextMessagesByDate(chatroomId, date);
+
+            if (chatMessages.isEmpty()) {
+                return "該日期沒有聊天記錄";
+            }
+
+            String prompt = buildSummaryPrompt(chatMessages, date);
+
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .temperature(0.7f)
+                    .topP(0.9f)
+                    .candidateCount(1)
+                    .maxOutputTokens(200)
+                    .systemInstruction(Content.fromParts(Part.fromText("""
+                    你是對話摘要分析師。根據提供的聊天記錄生成簡潔有條理的摘要。
+                    要求：
+                    1. 重點整理主要話題和討論內容重點
+                    2. 概述情緒變化和互動品質
+                    3. 提及 AI 重要的建議或見解
+                    4. 保持客觀
+                    5. 摘要長度約50字
+                    6. 使用繁體中文回應
+                    """)))
+                    .build();
+            GenerateContentResponse response = client.models.generateContent(
+                    "gemini-2.5-flash-lite",
+                    prompt,
+                    config
+            );
+
+            return response.text();
+
+        } catch (Exception e) {
+            System.err.println("產生聊天摘要失敗: " + e.getMessage());
+            return "抱歉，無法產生該日期的聊天摘要，請稍後再試。";
+        }
+    }
+
+    private String buildSummaryPrompt(List<ChatMessage> chatMessages, String date) {
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append(String.format("為 %s 這一天的聊天記錄生成摘要：\n\n", date));
+        promptBuilder.append("=== 聊天記錄開始 ===\n");
+
+        for (ChatMessage msg : chatMessages) {
+            String role = msg.getIsUser() ? "使用者" : "AI助手";
+            promptBuilder.append(role).append(": ").append(msg.getContent()).append("\n");
+        }
+
+        promptBuilder.append("=== 聊天記錄結束 ===\n\n");
+        promptBuilder.append("生成這次對話的摘要，包含主要話題、情緒變化和重點建議，只能用你來稱呼使用者，只能用夥伴來稱呼 AI。");
+
+        return promptBuilder.toString();
+    }
+
+    public String analyzeTodayDemandSimple(String chatroomId) {
+        try {
+            List<String> todayMessages = getTodayChatMessages(chatroomId);
+
+            if (todayMessages.isEmpty()) {
+                return "需要被理解和傾聽";
+            }
+
+            return generateSimpleDemandText(todayMessages);
+
+        } catch (Exception e) {
+            System.err.println("需求分析失敗: " + e.getMessage());
+            return "需要被理解和傾聽";
+        }
+    }
+
+    private String generateSimpleDemandText(List<String> chatMessages) {
+        try {
+            StringBuilder promptBuilder = new StringBuilder();
+            promptBuilder.append("你是心理分析師，根據聊天記錄簡短描述使用者心理需求，給情緒背後的主要需求與渴望分析，猜出使用者想要甚麼。\n ");
+
+            promptBuilder.append("= 聊天記錄 =\n");
+            for (String message : chatMessages) {
+                promptBuilder.append(message).append("\n");
+            }
+            promptBuilder.append("\n回傳需求描述。用繁體中文，只能文字，不要用Markdown格式，不可用 * ，不超過200字，只能用你來稱呼使用者，只能用夥伴來稱呼 AI。");
+
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .temperature(0.2f)
+                    .topP(0.2f)
+                    .candidateCount(1)
+                    .maxOutputTokens(500)
+                    .build();
+
+            GenerateContentResponse response = client.models.generateContent(
+                    "gemini-2.5-flash-lite",
+                    promptBuilder.toString(),
+                    config
+            );
+
+            String result = response.text();
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("生成需求文字失敗: " + e.getMessage());
+            return "需要被理解和傾聽";
+        }
     }
 }

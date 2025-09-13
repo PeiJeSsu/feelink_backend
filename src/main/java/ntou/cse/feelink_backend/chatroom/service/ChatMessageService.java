@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Date;
-import java.util.Optional;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class ChatMessageService {
@@ -147,5 +147,29 @@ public class ChatMessageService {
 
     public long countAIMessagesByChatroomId(String chatroomId) {
         return chatMessageRepository.countByChatroomIdAndIsUserFalse(chatroomId);
+    }
+
+    public List<ChatMessage> getTextMessagesByDate(String chatroomId, String date) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date targetDate = sdf.parse(date);
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(targetDate);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            Date startDate = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date endDate = calendar.getTime();
+
+            return chatMessageRepository.findByChatroomIdAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(chatroomId, startDate, endDate);
+
+        } catch (ParseException e) {
+            logger.error("日期格式錯誤: " + date);
+            return new ArrayList<>();
+        }
     }
 }
