@@ -3,11 +3,16 @@ package ntou.cse.feelink_backend.chatroom.controller;
 import ntou.cse.feelink_backend.chatroom.dto.ChatMessageDTO;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.service.EmotionAnalysisService;
+import ntou.cse.feelink_backend.chatroom.service.GoogleNaturalLanguageService;
+
 import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -17,6 +22,12 @@ public class ChatMessageController {
 
     @Autowired
     private ChatMessageService chatMessageService;
+
+    @Autowired
+    private EmotionAnalysisService emotionAnalysisService;
+
+    @Autowired
+    private GoogleNaturalLanguageService googleNaturalLanguageService;
 
     @GetMapping
     public ResponseEntity<List<ChatMessageDTO>> getAllMessages() {
@@ -192,4 +203,62 @@ public class ChatMessageController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/chatroom/{chatroomId}/emotion/today")
+    public ResponseEntity<EmotionAnalysisService.EmotionScores> getTodayEmotionAnalysis(@PathVariable String chatroomId) {
+        try {
+            EmotionAnalysisService.EmotionScores emotionScores = emotionAnalysisService.analyzeTodayEmotions(chatroomId);
+            return ResponseEntity.ok(emotionScores);
+        } catch (Exception e) {
+            System.err.println("當天情緒分析失敗: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/chatroom/{chatroomId}/summary/today")
+    public ResponseEntity<Map<String, String>> getTodayChatSummary(@PathVariable String chatroomId) {
+        try {
+            String summary = emotionAnalysisService.generateTodayChatSummary(chatroomId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("summary", summary);
+            response.put("date", emotionAnalysisService.getTaiwanTodayString());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("取得當天聊天摘要失敗: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/chatroom/{chatroomId}/demands/today")
+    public ResponseEntity<String> getTodaySimpleDemand(@PathVariable String chatroomId) {
+        try {
+            String demand = emotionAnalysisService.analyzeTodayDemandSimple(chatroomId);
+            return ResponseEntity.ok(demand);
+        } catch (Exception e) {
+            System.err.println("當天需求分析失敗: " + e.getMessage());
+            return ResponseEntity.ok("需要被理解和傾聽");
+        }
+    }
+
+    @GetMapping("/chatroom/{chatroomId}/score/today")
+    public ResponseEntity<Map<String, Float>> getTodaySentiment(@PathVariable String chatroomId) {
+        try {
+            GoogleNaturalLanguageService.SimpleSentimentResult result = googleNaturalLanguageService.analyzeTodaySentiment(chatroomId);
+
+            Map<String, Float> response = new HashMap<>();
+            response.put("score", result.getScore());
+            response.put("magnitude", result.getMagnitude());
+            System.out.println("Score: " + result.getScore() + " Magnitude: " + result.getMagnitude());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("獲取當天情感分數失敗: " + e.getMessage());
+            Map<String, Float> errorResponse = new HashMap<>();
+            errorResponse.put("score", 0.0f);
+            errorResponse.put("magnitude", 0.0f);
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
 }

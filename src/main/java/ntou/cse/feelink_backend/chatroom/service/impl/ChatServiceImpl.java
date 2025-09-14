@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,12 +37,7 @@ public class ChatServiceImpl implements ChatService {
     private ChatMessageService chatMessageService;
 
     @Autowired
-    private MessageFormattingService messageFormattingService;
-
-    @Autowired
     private ChatSessionRegistry registry;
-
-
 
     // 為每個聊天室添加鎖機制，防止並發問題
     private final ConcurrentHashMap<String, ReentrantLock> chatroomLocks = new ConcurrentHashMap<>();
@@ -75,9 +71,6 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public SseEmitter processChatStreamWithPersonality(MultipartFile file, String userMessage, String chatroomId, String personality, String aiMessageId) throws IOException {
 
-        // 取得該聊天室的歷史訊息來提供上下文
-        List<ChatMessage> chatHistory = chatMessageService.getMessagesByChatroomId(chatroomId);
-
         // 進行情緒預測
         String emotionPrediction = "";
         if (emotionPredictionChatService != null) {
@@ -98,8 +91,37 @@ public class ChatServiceImpl implements ChatService {
         final MultipartFile finalFile = file;
         final String finalAnalysisPrompt = analysisPrompt;
         final String finalChatroomId = chatroomId;
-        final String finalPersonality = personality;
         final String finalAiMessageId = aiMessageId;
+
+        final Chat chatSession;
+
+        if (personality != null && !"default".equals(personality)) {
+            chatSession = registry.getSession(chatroomId, personality);
+        } else {
+            chatSession = registry.getSession(chatroomId);
+        }
+
+        if (chatSession.getHistory(true).isEmpty()) {
+            List<ChatMessage> chatHistory = chatMessageService.getTextMessagesByChatroomId(chatroomId);
+            if (!chatHistory.isEmpty()) {
+                List<Content> contentHistory = new ArrayList<>();
+                for (ChatMessage msg : chatHistory) {
+                    String formattedContent;
+                    if (msg.getIsUser()) {
+                        formattedContent = "使用者: " + msg.getContent();
+                    } else {
+                        formattedContent = "AI: " + msg.getContent();
+                    }
+                    Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: \n"+formattedContent));
+                    contentHistory.add(content);
+                }
+                try {
+                    chatSession.sendMessage(contentHistory);
+                } catch (Exception e) {
+                    System.err.println("載入聊天歷史失敗: " + e.getMessage());
+                }
+            }
+        }
 
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
@@ -111,14 +133,6 @@ public class ChatServiceImpl implements ChatService {
             try {
                 // 加鎖防止同時處理同一個聊天室的請求
                 lock.lock();
-
-                // 獲取 ChatSession（每次都重新獲取以確保狀態正確）
-                Chat chatSession;
-                if (finalPersonality != null && !"default".equals(finalPersonality)) {
-                    chatSession = registry.getSession(finalChatroomId, finalPersonality);
-                } else {
-                    chatSession = registry.getSession(finalChatroomId);
-                }
 
                 String processedText = finalAnalysisPrompt;
                 Part processedImage = ChatInputProcessor.processImage(file);
