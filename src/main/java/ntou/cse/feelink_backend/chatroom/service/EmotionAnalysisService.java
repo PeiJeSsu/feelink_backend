@@ -20,7 +20,7 @@ import java.util.List;
 public class EmotionAnalysisService {
     private final Client client;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
+    private final String aiModel = "gemini-2.5-flash-lite";
     @Autowired
     private ChatMessageService chatMessageService;
 
@@ -123,7 +123,7 @@ public class EmotionAnalysisService {
             String prompt = buildChatAnalysisPrompt(chatMessages);
 
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.5-flash-lite",
+                    aiModel,
                     prompt,
                     config
             );
@@ -220,7 +220,7 @@ public class EmotionAnalysisService {
                     """)))
                     .build();
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.5-flash-lite",
+                    aiModel,
                     prompt,
                     config
             );
@@ -284,7 +284,7 @@ public class EmotionAnalysisService {
                     .build();
 
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.5-flash-lite",
+                    aiModel,
                     promptBuilder.toString(),
                     config
             );

@@ -59,7 +59,6 @@ public class GoogleNaturalLanguageService {
 
     public SimpleSentimentResult analyzeSentiment(String text) {
         if (text == null || text.trim().isEmpty()) {
-            System.out.println("Input text for sentiment analysis is null or empty. Returning neutral result.");
             return new SimpleSentimentResult(0.0f, 0.0f);
         }
 
@@ -78,7 +77,7 @@ public class GoogleNaturalLanguageService {
                     documentSentiment.getMagnitude()
             );
         } catch (Exception e) {
-            System.err.println("Google Natural Language API 情感分析失败: " + e.getMessage());
+            System.err.println("Google Natural Language API 情感分析失敗: " + e.getMessage());
             e.printStackTrace();
             return new SimpleSentimentResult(0.0f, 0.0f);
         }

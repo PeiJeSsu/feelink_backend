@@ -112,7 +112,7 @@ public class ChatServiceImpl implements ChatService {
                     } else {
                         formattedContent = "AI: " + msg.getContent();
                     }
-                    Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: /n"+formattedContent));
+                    Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: \n"+formattedContent));
                     contentHistory.add(content);
                 }
                 try {
