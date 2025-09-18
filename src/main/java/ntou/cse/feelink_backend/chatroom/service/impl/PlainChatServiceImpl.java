@@ -126,6 +126,7 @@ public class PlainChatServiceImpl {
             List<ChatMessage> chatHistory = chatMessageService.getTextMessagesByChatroomId(chatroomId);
             if (!chatHistory.isEmpty()) {
                 List<Content> contentHistory = new ArrayList<>();
+                contentHistory.add(Content.fromParts(Part.fromText("以下為曾經的對話紀錄: \n")));
                 for (ChatMessage msg : chatHistory) {
                     String formattedContent;
                     if (msg.getIsUser()) {
@@ -133,10 +134,11 @@ public class PlainChatServiceImpl {
                     } else {
                         formattedContent = "AI: " + msg.getContent();
                     }
-                    Content content = Content.fromParts(Part.fromText("以下為曾經彼此的對話紀錄: \n"+formattedContent));
+                    Content content = Content.fromParts(Part.fromText(formattedContent));
                     contentHistory.add(content);
                 }
                 try {
+                    contentHistory.add(Content.fromParts(Part.fromText("請直接回應使用者，不要一直介紹自己在這裡")));
                     chatSession.sendMessage(contentHistory);
                 } catch (Exception e) {
                     System.err.println("載入聊天歷史失敗: " + e.getMessage());
