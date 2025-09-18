@@ -17,7 +17,6 @@ public class ChatroomService {
     @Autowired
     private ChatMessageRepository chatMessageRepository;
 
-
     public List<Chatroom> getAllChatrooms() {
         return chatroomRepository.findAll();
     }

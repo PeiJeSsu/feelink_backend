@@ -143,7 +143,7 @@ public class EmotionAnalysisService {
 
         } catch (Exception e) {
             System.err.println("結構化情緒分析失敗: " + e.getMessage());
-            return new EmotionScores(0, 0, 0, 0,0,0,0,0); // 預設值
+            return new EmotionScores(-1, -1,-1,-1,-1,-1,-1,-1); // 預設值
         }
     }
     private String buildChatAnalysisPrompt(List<String> chatMessages) {
@@ -274,7 +274,7 @@ public class EmotionAnalysisService {
             for (String message : chatMessages) {
                 promptBuilder.append(message).append("\n");
             }
-            promptBuilder.append("\n回傳需求描述。用繁體中文，只能文字，不要用Markdown格式，不可用 * ，不超過200字，只能用你來稱呼使用者，只能用夥伴來稱呼 AI。");
+            promptBuilder.append("\n回傳需求描述。用繁體中文，只能文字，不要用Markdown格式，不可用 * ，不超過200字，只能用你來稱呼使用者，AI只能用夥伴來稱呼。");
 
             GenerateContentConfig config = GenerateContentConfig.builder()
                     .temperature(0.2f)

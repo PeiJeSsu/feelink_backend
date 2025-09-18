@@ -36,7 +36,7 @@ public class GoogleNaturalLanguageService {
 
     public List<String> getTodayChatMessages(String chatroomId) {
         String today = getTaiwanTodayString();
-        List<ChatMessage> todayMessages = chatMessageService.getTextMessagesByDate(chatroomId, today);
+        List<ChatMessage> todayMessages = chatMessageService.getUserTextMessagesByDate(chatroomId, today);
 
         List<String> chatContents = new ArrayList<>();
         if (todayMessages == null) {
