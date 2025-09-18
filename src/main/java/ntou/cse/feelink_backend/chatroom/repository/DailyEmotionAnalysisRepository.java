@@ -14,9 +14,6 @@ public interface DailyEmotionAnalysisRepository extends MongoRepository<DailyEmo
     // 歷史查詢也改用字串排序
     List<DailyEmotionAnalysis> findByChatroomIdOrderByDateStringDesc(String chatroomId);
 
-    // 最近30天查詢
-    List<DailyEmotionAnalysis> findTop30ByChatroomIdOrderByDateStringDesc(String chatroomId);
-
     //根據聊天室ID和日期字串刪除
     long deleteByChatroomIdAndDateString(String chatroomId, String dateString);
 

@@ -99,11 +99,6 @@ public class DailyEmotionAnalysisService {
         return repository.findByChatroomId(chatroomId);
     }
 
-    // 查詢最近30天分析記錄
-    public List<DailyEmotionAnalysis> getRecentAnalysis(String chatroomId) {
-        return repository.findTop30ByChatroomIdOrderByDateStringDesc(chatroomId);
-    }
-
     // 刪除當天的情緒分析記錄
     public boolean deleteTodayAnalysis(String chatroomId) {
         String today = emotionAnalysisService.getTaiwanTodayString();
