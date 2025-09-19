@@ -272,5 +272,17 @@ public class ChatMessageController {
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
-
+    @PostMapping("/chatroom/{chatroomId}/prequestion")
+    public ResponseEntity<ChatMessageDTO> savePreQuestionForChatroom(
+            @PathVariable String chatroomId,
+            @RequestBody String preQuestion) {
+        try {
+            ChatMessage savedMessage = chatMessageService.savePreQuestionForNewChatroom(chatroomId, preQuestion);
+            ChatMessageDTO savedMessageDTO = MapperUtil.toDTO(savedMessage);
+            return ResponseEntity.ok(savedMessageDTO);
+        } catch (Exception e) {
+            System.err.println("儲存預設問題時發生錯誤: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

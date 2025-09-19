@@ -195,5 +195,18 @@ public class ChatMessageService {
             logger.error("日期格式錯誤: " + date);
             return new ArrayList<>();
         }
+
+    public ChatMessage savePreQuestionForNewChatroom(String chatroomId, String preQuestion) {
+        ChatMessage preQuestionMessage = new ChatMessage();
+        preQuestionMessage.setChatroomId(chatroomId);
+        preQuestionMessage.setIsUser(false);  // AI 發送的訊息
+        preQuestionMessage.setIsDrawingData(false);  // 文字訊息，非畫布資料
+        preQuestionMessage.setContent(preQuestion);
+        preQuestionMessage.setSentAt(new Date());  // 設定為當前時間
+
+        ChatMessage savedMessage = chatMessageRepository.save(preQuestionMessage);
+        logger.info("已為聊天室儲存預設問題");
+        return savedMessage;
+
     }
 }
