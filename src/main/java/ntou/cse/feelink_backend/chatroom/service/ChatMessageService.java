@@ -172,6 +172,30 @@ public class ChatMessageService {
             return new ArrayList<>();
         }
     }
+
+    public List<ChatMessage> getUserTextMessagesByDate(String chatroomId, String date) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date targetDate = sdf.parse(date);
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(targetDate);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            Date startDate = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date endDate = calendar.getTime();
+
+            return chatMessageRepository.findByChatroomIdAndIsUserTrueAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(chatroomId, startDate, endDate);
+
+        } catch (ParseException e) {
+            logger.error("日期格式錯誤: " + date);
+            return new ArrayList<>();
+        }
+
     public ChatMessage savePreQuestionForNewChatroom(String chatroomId, String preQuestion) {
         ChatMessage preQuestionMessage = new ChatMessage();
         preQuestionMessage.setChatroomId(chatroomId);
@@ -183,5 +207,6 @@ public class ChatMessageService {
         ChatMessage savedMessage = chatMessageRepository.save(preQuestionMessage);
         logger.info("已為聊天室儲存預設問題");
         return savedMessage;
+
     }
 }

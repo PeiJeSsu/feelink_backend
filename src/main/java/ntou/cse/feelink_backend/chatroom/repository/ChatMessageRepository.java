@@ -19,6 +19,9 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
     // 只取得使用者訊息
     List<ChatMessage> findByChatroomIdAndIsUserTrueOrderBySentAtAsc(String chatroomId);
 
+    // 只取得使用者當天訊息
+    List<ChatMessage> findByChatroomIdAndIsUserTrueAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(String chatroomId, Date startDate, Date endDate);
+
     // 只取得AI訊息
     List<ChatMessage> findByChatroomIdAndIsUserFalseOrderBySentAtAsc(String chatroomId);
 

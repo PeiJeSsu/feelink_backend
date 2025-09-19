@@ -115,6 +115,18 @@ public class ChatMessageController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userTextMessages);
     }
+    // 取得使用者文字訊息數量
+    @GetMapping("/chatroom/{chatroomId}/user/text/count")
+    public ResponseEntity<Map<String, Integer>> getUserTextMessageCount(@PathVariable String chatroomId) {
+        List<ChatMessage> messages = chatMessageService.getMessagesByChatroomId(chatroomId);
+        long count = messages.stream()
+                .filter(msg -> msg.getIsUser() && !msg.getIsDrawingData())
+                .count();
+
+        Map<String, Integer> response = new HashMap<>();
+        response.put("count", (int) count);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping
     public ResponseEntity<ChatMessageDTO> createMessage(@RequestBody ChatMessageDTO messageDTO) {
