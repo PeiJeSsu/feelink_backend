@@ -7,6 +7,7 @@ import ntou.cse.feelink_backend.chatroom.dto.UserDTO;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.model.Chatroom;
 import ntou.cse.feelink_backend.chatroom.model.User;
+import ntou.cse.feelink_backend.common.enums.AIPartner;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,13 +45,13 @@ public class MapperUtil {
                 .collect(Collectors.toList());
     }
 
-    // Chatroom 相關轉換
     public static ChatroomDTO toDTO(Chatroom entity) {
         if (entity == null) return null;
         return new ChatroomDTO(
                 entity.getChatroomId(),
                 entity.getUserId(),
-                entity.getTitle()
+                entity.getTitle(),
+                entity.getAiPartner()
         );
     }
 
@@ -60,6 +61,7 @@ public class MapperUtil {
         entity.setChatroomId(dto.getChatroomId());
         entity.setUserId(dto.getUserId());
         entity.setTitle(dto.getTitle());
+        entity.setAiPartner(dto.getAiPartner());
         return entity;
     }
 
@@ -69,14 +71,15 @@ public class MapperUtil {
                 .collect(Collectors.toList());
     }
 
-    // User 相關轉換
+    // User 相關轉換 - 更新支援 PreferredAIPartner
     public static UserDTO toDTO(User entity) {
         if (entity == null) return null;
         return new UserDTO(
                 entity.getUserId(),
                 entity.getEmail(),
                 entity.getNickname(),
-                entity.getAINickname()
+                entity.getAINickname(),
+                entity.getPreferredAIPartner()
         );
     }
 
@@ -87,6 +90,7 @@ public class MapperUtil {
         entity.setEmail(dto.getEmail());
         entity.setNickname(dto.getNickname());
         entity.setAINickname(dto.getAINickname());
+        entity.setPreferredAIPartner(dto.getPreferredAIPartner());
         return entity;
     }
 
@@ -94,5 +98,39 @@ public class MapperUtil {
         return entities.stream()
                 .map(MapperUtil::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public static AIPartner mapPersonalityToAIPartner(String personalityId) {
+        if (personalityId == null) {
+            return null;
+        }
+
+        switch (personalityId.toLowerCase()) {
+            case "creative":
+                return AIPartner.MUSE;
+            case "curious":
+                return AIPartner.QIQI;
+            case "warm":
+                return AIPartner.NUANNUAN;
+            default:
+                throw new IllegalArgumentException("未知的個性類型: " + personalityId);
+        }
+    }
+    
+    public static String mapAIPartnerToPersonality(AIPartner aiPartner) {
+        if (aiPartner == null) {
+            return null;
+        }
+
+        switch (aiPartner) {
+            case MUSE:
+                return "creative";
+            case QIQI:
+                return "curious";
+            case NUANNUAN:
+                return "warm";
+            default:
+                throw new IllegalArgumentException("未知的AI夥伴類型: " + aiPartner);
+        }
     }
 }

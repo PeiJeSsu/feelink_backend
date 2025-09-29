@@ -37,6 +37,18 @@ public class ChatroomService {
         return chatroomRepository.save(chatroom);
     }
 
+    // 新增專門更新標題的方法
+    public Chatroom updateChatroomTitle(String chatroomId, String title) {
+        Optional<Chatroom> existingChatroom = chatroomRepository.findById(chatroomId);
+        if (!existingChatroom.isPresent()) {
+            throw new RuntimeException("聊天室不存在: " + chatroomId);
+        }
+
+        Chatroom chatroom = existingChatroom.get();
+        chatroom.setTitle(title);
+        return chatroomRepository.save(chatroom);
+    }
+
     public void deleteChatroom(String chatroomId) {
         // 刪除相關的訊息和分析
         chatMessageRepository.deleteByChatroomId(chatroomId);
