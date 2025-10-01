@@ -3,6 +3,7 @@ package ntou.cse.feelink_backend.chatroom.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import ntou.cse.feelink_backend.common.enums.AIPartner;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -20,4 +21,7 @@ public class Chatroom {
 
     @Field("title")
     private String title;
+
+    @Field("aiPartner")
+    private AIPartner aiPartner;
 }

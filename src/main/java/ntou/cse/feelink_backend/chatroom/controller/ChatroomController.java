@@ -58,9 +58,7 @@ public class ChatroomController {
     @PutMapping("/{chatroomId}")
     public ResponseEntity<ChatroomDTO> updateChatroom(@PathVariable String chatroomId, @RequestBody ChatroomDTO chatroomDTO) {
         try {
-            chatroomDTO.setChatroomId(chatroomId);
-            Chatroom chatroom = MapperUtil.toEntity(chatroomDTO);
-            Chatroom updatedChatroom = chatroomService.updateChatroom(chatroom);
+            Chatroom updatedChatroom = chatroomService.updateChatroomTitle(chatroomId, chatroomDTO.getTitle());
             ChatroomDTO updatedChatroomDTO = MapperUtil.toDTO(updatedChatroom);
             return ResponseEntity.ok(updatedChatroomDTO);
         } catch (Exception e) {
