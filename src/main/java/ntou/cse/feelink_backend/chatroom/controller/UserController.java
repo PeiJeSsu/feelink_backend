@@ -54,7 +54,7 @@ public class UserController {
             return user.map(u -> ResponseEntity.ok(MapperUtil.toDTO(u)))
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            logger.error("根據mail獲取使用者時發生錯誤: {}", email, e);
+            logger.error("根據Email獲取使用者時發生錯誤: {}", email, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

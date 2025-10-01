@@ -116,7 +116,7 @@ public class MapperUtil {
                 throw new IllegalArgumentException("未知的個性類型: " + personalityId);
         }
     }
-    
+
     public static String mapAIPartnerToPersonality(AIPartner aiPartner) {
         if (aiPartner == null) {
             return null;
