@@ -51,7 +51,8 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
 
     // 查詢某個日期範圍的文字訊息
     List<ChatMessage> findByChatroomIdAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(String chatroomId, Date startDate, Date endDate);
-
+    // 計算指定日期範圍的使用者文字訊息數量
+    int countByChatroomIdAndIsUserTrueAndIsDrawingDataFalseAndSentAtBetween(String chatroomId, Date startDate, Date endDate);
     // 統計方法
     long countByChatroomId(String chatroomId);
     long countByChatroomIdAndIsUserTrue(String chatroomId);

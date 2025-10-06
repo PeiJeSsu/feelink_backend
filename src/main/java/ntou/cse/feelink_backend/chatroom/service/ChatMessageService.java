@@ -173,6 +173,32 @@ public class ChatMessageService {
         }
     }
 
+    // 新增：計算今天的使用者文字訊息計數
+    public int countUserTextMessagesToday(String chatroomId) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            String today = sdf.format(new Date());  // 獲取今天日期字串
+            Date targetDate = sdf.parse(today);
+
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(targetDate);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            Date startDate = calendar.getTime();
+
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            Date endDate = calendar.getTime();
+
+            return chatMessageRepository.countByChatroomIdAndIsUserTrueAndIsDrawingDataFalseAndSentAtBetween(chatroomId, startDate, endDate);
+
+        } catch (ParseException e) {
+            logger.error("日期格式錯誤: ");
+            return 0;
+        }
+    }
+
     public List<ChatMessage> getUserTextMessagesByDate(String chatroomId, String date) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -196,7 +222,7 @@ public class ChatMessageService {
             return new ArrayList<>();
         }
     }
-        public ChatMessage savePreQuestionForNewChatroom(String chatroomId, String preQuestion) {
+    public ChatMessage savePreQuestionForNewChatroom(String chatroomId, String preQuestion) {
             ChatMessage preQuestionMessage = new ChatMessage();
             preQuestionMessage.setChatroomId(chatroomId);
             preQuestionMessage.setIsUser(false);  // AI 發送的訊息
@@ -207,6 +233,6 @@ public class ChatMessageService {
             ChatMessage savedMessage = chatMessageRepository.save(preQuestionMessage);
             logger.info("已為聊天室儲存預設問題");
             return savedMessage;
-        }
+    }
 
 }

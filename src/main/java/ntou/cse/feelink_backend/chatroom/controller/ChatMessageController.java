@@ -128,6 +128,23 @@ public class ChatMessageController {
         return ResponseEntity.ok(response);
     }
 
+    // 取得今天的使用者文字訊息數量
+    @GetMapping("/chatroom/{chatroomId}/user/today/text/count")
+    public ResponseEntity<Map<String, Integer>> getUserTextMessageCountToday(@PathVariable String chatroomId) {
+        try {
+            int count = chatMessageService.countUserTextMessagesToday(chatroomId);
+            System.out.println(count);
+            Map<String, Integer> response = new HashMap<>();
+            response.put("count", count);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("取得今天使用者文字訊息計數失敗: " + e.getMessage());
+            Map<String, Integer> errorResponse = new HashMap<>();
+            errorResponse.put("count", 0);
+            return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
     @PostMapping
     public ResponseEntity<ChatMessageDTO> createMessage(@RequestBody ChatMessageDTO messageDTO) {
         ChatMessage message = MapperUtil.toEntity(messageDTO);
