@@ -8,7 +8,6 @@ import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatService;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
