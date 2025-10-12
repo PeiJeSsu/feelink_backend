@@ -9,15 +9,12 @@ import ntou.cse.feelink_backend.chatroom.service.RemoveBgService;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 import java.util.Base64;
 import java.util.Date;
-import java.util.Optional;
 
 @RestController
 public class AIDrawingController {

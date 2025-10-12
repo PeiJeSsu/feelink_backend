@@ -11,7 +11,6 @@ import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import java.io.IOException;
-import java.util.function.Consumer;
 
 @Service
 public class DrawingAnalysisChatServiceImpl {

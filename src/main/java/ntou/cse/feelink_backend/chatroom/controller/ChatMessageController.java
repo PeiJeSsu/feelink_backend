@@ -133,7 +133,6 @@ public class ChatMessageController {
     public ResponseEntity<Map<String, Integer>> getUserTextMessageCountToday(@PathVariable String chatroomId) {
         try {
             int count = chatMessageService.countUserTextMessagesToday(chatroomId);
-            System.out.println(count);
             Map<String, Integer> response = new HashMap<>();
             response.put("count", count);
             return ResponseEntity.ok(response);
