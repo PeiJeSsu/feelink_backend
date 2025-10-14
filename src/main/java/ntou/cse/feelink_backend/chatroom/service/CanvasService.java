@@ -16,12 +16,10 @@ public class CanvasService {
         Optional<Canvas> existingCanvas = canvasRepository.findByChatroomId(chatroomId);
 
         if (existingCanvas.isPresent()) {
-            // 更新现有画布
             Canvas canvas = existingCanvas.get();
             canvas.setCanvasData(canvasData);
             return canvasRepository.save(canvas);
         } else {
-            // 创建新画布
             Canvas newCanvas = new Canvas(chatroomId, canvasData);
             return canvasRepository.save(newCanvas);
         }

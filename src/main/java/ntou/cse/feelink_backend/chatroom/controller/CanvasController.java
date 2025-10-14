@@ -24,18 +24,18 @@ public class CanvasController {
             String canvasData = request.get("canvasData");
 
             if (chatroomId == null || chatroomId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("聊天室ID不能为空");
+                return ResponseEntity.badRequest().body("聊天室 ID 不能為空");
             }
 
             if (canvasData == null) {
-                return ResponseEntity.badRequest().body("画布数据不能为空");
+                return ResponseEntity.badRequest().body("畫布資料不能為空");
             }
 
             canvasService.saveCanvas(chatroomId, canvasData);
-            return ResponseEntity.ok("画布保存成功");
+            return ResponseEntity.ok("畫布儲存成功");
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("保存画布失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("畫布儲存失敗: " + e.getMessage());
         }
     }
 
@@ -43,7 +43,7 @@ public class CanvasController {
     public ResponseEntity<String> getChatroomCanvas(@PathVariable String chatroomId) {
         try {
             if (chatroomId == null || chatroomId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("聊天室ID不能为空");
+                return ResponseEntity.badRequest().body("聊天室 ID 不能為空");
             }
 
             Optional<Canvas> canvas = canvasService.getCanvasByChatroomId(chatroomId);
@@ -55,7 +55,7 @@ public class CanvasController {
             }
 
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("获取画布失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("取得畫布失敗: " + e.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class CanvasController {
     public ResponseEntity<String> deleteCanvas(@PathVariable String chatroomId) {
         try {
             if (chatroomId == null || chatroomId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("聊天室ID不能为空");
+                return ResponseEntity.badRequest().body("聊天室 ID 不能為空");
             }
 
             canvasService.deleteCanvasByChatroomId(chatroomId);
