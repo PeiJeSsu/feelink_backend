@@ -1,0 +1,39 @@
+package ntou.cse.feelink_backend.chatroom.service;
+
+import ntou.cse.feelink_backend.chatroom.model.Canvas;
+import ntou.cse.feelink_backend.chatroom.repository.CanvasRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.Optional;
+
+@Service
+public class CanvasService {
+
+    @Autowired
+    private CanvasRepository canvasRepository;
+
+    public Canvas saveCanvas(String chatroomId, String canvasData) {
+        Optional<Canvas> existingCanvas = canvasRepository.findByChatroomId(chatroomId);
+
+        if (existingCanvas.isPresent()) {
+            // 更新现有画布
+            Canvas canvas = existingCanvas.get();
+            canvas.setCanvasData(canvasData);
+            return canvasRepository.save(canvas);
+        } else {
+            // 创建新画布
+            Canvas newCanvas = new Canvas(chatroomId, canvasData);
+            return canvasRepository.save(newCanvas);
+        }
+    }
+
+    public Optional<Canvas> getCanvasByChatroomId(String chatroomId) {
+        return canvasRepository.findByChatroomId(chatroomId);
+    }
+
+    public void deleteCanvasByChatroomId(String chatroomId) {
+        Optional<Canvas> existingCanvas = canvasRepository.findByChatroomId(chatroomId);
+        existingCanvas.ifPresent(canvasRepository::delete);
+    }
+
+}
