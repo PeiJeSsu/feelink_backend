@@ -2,11 +2,14 @@ package ntou.cse.feelink_backend.chatroom.controller;
 
 import ntou.cse.feelink_backend.chatroom.model.Canvas;
 import ntou.cse.feelink_backend.chatroom.service.CanvasService;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 @RestController
@@ -17,19 +20,25 @@ public class CanvasController {
     @Autowired
     private CanvasService canvasService;
 
-    @PostMapping("/save")
-    public ResponseEntity<String> saveCanvas(@RequestBody Map<String, String> request) {
+    @PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> saveCanvas(
+            @RequestParam("chatroomId") String chatroomId,
+            @RequestPart("canvasData") MultipartFile canvasFile) {
         try {
-            String chatroomId = request.get("chatroomId");
-            String canvasData = request.get("canvasData");
-
             if (chatroomId == null || chatroomId.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("聊天室 ID 不能為空");
             }
 
-            if (canvasData == null) {
+            if (canvasFile == null || canvasFile.isEmpty()) {
                 return ResponseEntity.badRequest().body("畫布資料不能為空");
             }
+
+            if (canvasFile.getSize() > 50 * 1024 * 1024) { // 50MB
+                return ResponseEntity.badRequest().body("畫布資料過大，請減少繪圖內容");
+            }
+
+            String jsonContent = new String(canvasFile.getBytes(), StandardCharsets.UTF_8);
+            Document canvasData = Document.parse(jsonContent);
 
             canvasService.saveCanvas(chatroomId, canvasData);
             return ResponseEntity.ok("畫布儲存成功");
@@ -49,7 +58,7 @@ public class CanvasController {
             Optional<Canvas> canvas = canvasService.getCanvasByChatroomId(chatroomId);
 
             if (canvas.isPresent()) {
-                return ResponseEntity.ok(canvas.get().getCanvasData());
+                return ResponseEntity.ok(canvas.get().getCanvasData().toJson());
             } else {
                 return ResponseEntity.ok("");
             }
