@@ -1,5 +1,6 @@
 package ntou.cse.feelink_backend.config;
 
+import com.google.genai.types.*;
 import ntou.cse.feelink_backend.config.personality.BasePersonalityPrompt;
 import ntou.cse.feelink_backend.config.personality.CreativePersonalityPrompt;
 import ntou.cse.feelink_backend.config.personality.CuriousPersonalityPrompt;
@@ -8,15 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.genai.Client;
-import com.google.genai.types.SafetySetting;
-import com.google.genai.types.HarmBlockThreshold;
-import com.google.genai.types.HarmCategory;
-import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.Chat;
-import com.google.genai.types.Content;
-import com.google.genai.types.Part;
-import com.google.genai.types.Tool;
-import com.google.genai.types.GoogleSearch;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,14 +30,11 @@ public class GeminiConfiguration {
             "\n分析使用者的對話內容，判斷屬於哪一級（1-5），回傳數字即可。同時命中多級，取最高級。";
 
     private static final String AVOID = """
-            根據系統提供的危機等級（1-5）調整回應，不可擅自提供預設以外的資源，一定要遵從給予方式。
+            根據系統提供的危機等級（1-5）調整回應，遵從給予方式。
             1級(安全)：正常陪伴對話，鼓勵創作
             2級(輕度)：提供放鬆技巧（深呼吸、散步、聊音樂），給睡眠/飲食/運動建議
-            3級(中度)：詢問地區提供諮商資源，引導完成線上量表，推薦線上資源(MarkDown格式)： [心理衛教資源](https://mental-health.gov.taipei/Content_List.aspx?n=1B33EF17CF3EC016) 或者 [憂鬱症量表](https://www.jtf.org.tw/overblue/taiwan1/)，
-                      若使用者想要音樂資源，可以推薦線上資源(MarkDown格式)：[Marconi Union的《Weightless》](https://www.youtube.com/watch?v=UfcAVejslrU)，或[Healing & Meditation](https://www.youtube.com/@healingmeditation1272)，
-                      若使用者想要文章的話，可以推薦線上資源(MarkDown格式)：[《刻意放鬆》讀後心得：擺脫疲憊、重拾活力的祕訣](https://readingoutpost.com/deliberate-relax/)，或[天下雜誌「心靈成長」專欄](https://www.cw.com.tw/subchannel.action?idSubChannel=399)。
+            3級(中度)：詢問地區提供諮商、音樂、文章等資源，引導完成線上量表，推薦線上資源(MarkDown格式)。
             4級(重度)：詢問所在地，提供最近諮商或身心科，鼓勵聯絡親友師長，給24h熱線：1925/1995/1980
-            
             5級(危急)：立即顯示警示「若有自傷衝動，請立即撥打1925/1995或119」，詢問地區找最快資源，提供簡短指示（找信任的人通話或深呼吸求助）
             請自然融入回應，資源之間不要連在一起給，用逗號隔開，不要說出等級數字，不要一直提供線上資源，使用者回應五次後才可再次提供。
             """;
@@ -57,7 +47,7 @@ public class GeminiConfiguration {
 
     @Bean
     public Client client() {
-        return  Client.builder()
+        return Client.builder()
                 .project(projectId)
                 .location(location)
                 .vertexAI(true)
@@ -96,7 +86,7 @@ public class GeminiConfiguration {
                         .build());
     }
 
-    Tool googleSearchTool = Tool.builder().googleSearch(GoogleSearch.builder()).build();
+    Tool googleSearchTool = Tool.builder().googleSearch(GoogleSearch.builder().build()).build();
 
     @Bean("drawingAnalysisConfig")
     public GenerateContentConfig drawingAnalysisConfig(ImmutableList<SafetySetting> safetySettings ,@Qualifier("basePersonalityPrompt") BasePersonalityPrompt basePrompt) {
@@ -104,13 +94,13 @@ public class GeminiConfiguration {
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
-                .maxOutputTokens(512)
+                .maxOutputTokens(1024)
+                .httpOptions(HttpOptions.builder().apiVersion("v1").build())
                 .safetySettings(safetySettings)
-                .systemInstruction(Content.fromParts(Part.fromText(basePrompt.getSystemInstruction())))
-                .tools(googleSearchTool)
+                .systemInstruction(Content.fromParts(Part.fromText(basePrompt.getSystemInstruction() + AVOID )))
                 .build();
     }
-
+    GoogleSearch googleSearch ;
     @Bean("emotionPredictorConfig")
     public GenerateContentConfig emotionPredictorConfig(ImmutableList<SafetySetting> safetySettings) {
         return GenerateContentConfig.builder()
@@ -124,15 +114,15 @@ public class GeminiConfiguration {
     }
 
     @Bean("creativeConfig")
-    public GenerateContentConfig creativeConfig(ImmutableList<SafetySetting> safetySettings , CreativePersonalityPrompt creativePrompt) {
+    public GenerateContentConfig creativeConfig(ImmutableList<SafetySetting> safetySettings , CreativePersonalityPrompt creativePrompt ) {
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
-                .maxOutputTokens(512)
+                .maxOutputTokens(1024)
+                .httpOptions(HttpOptions.builder().apiVersion("v1").build())
                 .safetySettings(safetySettings)
                 .systemInstruction(Content.fromParts(Part.fromText(creativePrompt.getSystemInstruction() + AVOID)))
-                .tools(googleSearchTool)
                 .build();
     }
 
@@ -142,23 +132,23 @@ public class GeminiConfiguration {
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
-                .maxOutputTokens(512)
+                .maxOutputTokens(1024)
+                .httpOptions(HttpOptions.builder().apiVersion("v1").build())
                 .safetySettings(safetySettings)
                 .systemInstruction(Content.fromParts(Part.fromText(curiousPrompt.getSystemInstruction() + AVOID)))
-                .tools(googleSearchTool)
                 .build();
     }
 
     @Bean("warmMentorConfig")
-    public GenerateContentConfig warmMentorConfig(ImmutableList<SafetySetting> safetySettings , WarmPersonalityPrompt warmPrompt) {
+    public GenerateContentConfig warmMentorConfig(ImmutableList<SafetySetting> safetySettings , WarmPersonalityPrompt warmPrompt ) {
         return GenerateContentConfig.builder()
                 .temperature(0.8f)
                 .topP(0.8f)
                 .candidateCount(1)
-                .maxOutputTokens(512)
+                .maxOutputTokens(1024)
+                .httpOptions(HttpOptions.builder().apiVersion("v1").build())
                 .safetySettings(safetySettings)
                 .systemInstruction(Content.fromParts(Part.fromText(warmPrompt.getSystemInstruction() + AVOID)))
-                .tools(googleSearchTool)
                 .build();
     }
     @Bean
