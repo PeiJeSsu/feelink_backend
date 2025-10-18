@@ -120,7 +120,7 @@ public class PlainChatServiceImpl {
         }
 
         if (!searchResult.isEmpty()) {
-            promptBuilder.append("\n\n以下為搜尋到的結果，根據結果提供給使用者，以對應名稱的相關訊息，後面提供\"網址\"的方式\n 例如 xxxxxxxxx [https://] 的形式").append(searchResult);
+            promptBuilder.append("\n\n以下為搜尋到的結果，根據結果提供給使用者，以對應名稱的相關訊息，後面提供\"網址\"的方式\n 例如 xxxxxxxxx [https://] 的形式，可以直接點擊的網址並且不同資源要換行").append(searchResult);
         }
 
         final String analysisPrompt = promptBuilder.toString();
