@@ -31,18 +31,17 @@ public class GeminiService {
             }
 
             Content content = Content.fromParts(
-                    Part.fromText(systemInstructions+"\n按照指示加上東西或修改，不詢問如何增加元素，一定要回應圖片與聽從命令。"),
+                    Part.fromText(systemInstructions+"\n一定要回應圖片。"),
                     Part.fromBytes(imageBytes,"image/jpeg")
             );
             GenerateContentConfig config = GenerateContentConfig.builder()
                     .responseModalities("TEXT", "IMAGE")
-                    .temperature(0.8f)
                     .candidateCount(1)
                     .systemInstruction(Content.fromParts(Part.fromText(systemInstructions)))
                     .build();
 
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.5-flash-image-preview",
+                    "gemini-2.5-flash-image",
                     content,
                     config
             );
@@ -61,16 +60,9 @@ public class GeminiService {
     private String buildPromptByMode(String prompt, String mode) {
         if ("drawing".equals(mode)) {
             return String.format("""
-                    分析我上傳圖片的藝術風格（包含線條、色彩、筆觸和整體氛圍等），完全採用這種分析出來的風格編輯原圖。
-                    如果無法從圖片中看出風格，假如是一張空白的圖片，則生成的圖像風格應為「簡單的線條塗鴉風格」。
-                    你的任務為：
-                    - 如果我要求添加元素，你就只畫上我指定的東西。
-                    - 如果我要求移除元素，你就只刪除我指定的東西。
-                    - 如果我要求更改現有元素的位置、大小或特徵等，你就依照我的描述進行修改。
-                    - 不要詢問如何增加元素，一定要回應圖片。
-                    現在你要 %s。
-                    除了我明確指示要添加、移除或更改的部分之外，請務必完整保留原圖的所有其他內容。若有背景，維持一樣的背景，不可移除。
-                    一定要回應圖片，並且不要在圖片上生成文字，用繁體中文回答。
+                    你要 %s。
+                    我明確指示要添加、移除或更改的部分之外，請務必完整保留原圖的所有其他內容，其餘部分保持不變。
+                    一定要回應圖片，不可生成文字，用繁體中文回答。
                     """, prompt);
         }
         else if ("generateObject".equals(mode)) {
