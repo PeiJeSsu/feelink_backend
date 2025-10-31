@@ -111,4 +111,21 @@ public class DailyEmotionAnalysisController {
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
+
+    // 獲取多個聊天室的最新情緒分析摘要（用於長期分析折線圖）
+    @PostMapping("/chatrooms/latest-summary")
+    public ResponseEntity<List<DailyEmotionAnalysis>> getLatestAnalysisForChatrooms(
+            @RequestBody Map<String, List<String>> request) {
+        try {
+            List<String> chatroomIds = request.get("chatroomIds");
+            if (chatroomIds == null || chatroomIds.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            List<DailyEmotionAnalysis> latestAnalyses = analysisService.getLatestAnalysisForChatrooms(chatroomIds);
+            return ResponseEntity.ok(latestAnalyses);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

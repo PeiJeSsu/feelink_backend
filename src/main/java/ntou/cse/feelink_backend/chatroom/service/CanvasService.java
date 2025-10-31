@@ -12,15 +12,16 @@ public class CanvasService {
     @Autowired
     private CanvasRepository canvasRepository;
 
-    public Canvas saveCanvas(String chatroomId, String canvasData) {
+    public Canvas saveCanvas(String chatroomId, String canvasData, String canvasImageUrl) {
         Optional<Canvas> existingCanvas = canvasRepository.findByChatroomId(chatroomId);
 
         if (existingCanvas.isPresent()) {
             Canvas canvas = existingCanvas.get();
             canvas.setCanvasData(canvasData);
+            canvas.setCanvasImageUrl(canvasImageUrl);
             return canvasRepository.save(canvas);
         } else {
-            Canvas newCanvas = new Canvas(chatroomId, canvasData);
+            Canvas newCanvas = new Canvas(chatroomId, canvasData, canvasImageUrl);
             return canvasRepository.save(newCanvas);
         }
     }
