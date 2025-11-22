@@ -21,8 +21,17 @@ public class Canvas {
     @Field("canvasData")
     private String canvasData;
 
+    @Field("canvasImageUrl")
+    private String canvasImageUrl;
+
     public Canvas(String chatroomId, String canvasData) {
         this.chatroomId = chatroomId;
         this.canvasData = canvasData;
+    }
+
+    public Canvas(String chatroomId, String canvasData, String canvasImageUrl) {
+        this.chatroomId = chatroomId;
+        this.canvasData = canvasData;
+        this.canvasImageUrl = canvasImageUrl;
     }
 }

@@ -22,6 +22,7 @@ public class CanvasController {
         try {
             String chatroomId = request.get("chatroomId");
             String canvasData = request.get("canvasData");
+            String canvasImageUrl = request.get("canvasImageUrl");
 
             if (chatroomId == null || chatroomId.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("聊天室 ID 不能為空");
@@ -31,7 +32,7 @@ public class CanvasController {
                 return ResponseEntity.badRequest().body("畫布資料不能為空");
             }
 
-            canvasService.saveCanvas(chatroomId, canvasData);
+            canvasService.saveCanvas(chatroomId, canvasData, canvasImageUrl);
             return ResponseEntity.ok("畫布儲存成功");
 
         } catch (Exception e) {
@@ -56,6 +57,22 @@ public class CanvasController {
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("取得畫布失敗: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/chatroom/{chatroomId}/image")
+    public ResponseEntity<Canvas> getChatroomCanvasImage(@PathVariable String chatroomId) {
+        try {
+            if (chatroomId == null || chatroomId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            Optional<Canvas> canvas = canvasService.getCanvasByChatroomId(chatroomId);
+
+            return canvas.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
     }
 

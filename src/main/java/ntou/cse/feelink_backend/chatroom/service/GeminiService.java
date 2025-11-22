@@ -31,7 +31,7 @@ public class GeminiService {
             }
 
             Content content = Content.fromParts(
-                    Part.fromText(systemInstructions+"\n一定要回應圖片，並且訴說原先給的圖片畫得如何，正向回應。"),
+                    Part.fromText(systemInstructions+"\n一定要回應圖片，並且講解原先給的圖片畫得如何，正向回應。"),
                     Part.fromBytes(imageBytes,"image/jpeg")
             );
             GenerateContentConfig config = GenerateContentConfig.builder()

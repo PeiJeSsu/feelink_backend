@@ -94,9 +94,28 @@ public class DailyEmotionAnalysisService {
         return repository.findByChatroomIdOrderByDateStringDesc(chatroomId);
     }
 
-    // 獲取該聊天室所有的情緒分析記錄（用於管理）
+    // 獲取該聊天室所有的情緒分析記錄(用於管理)
     public List<DailyEmotionAnalysis> getAllAnalysisForChatroom(String chatroomId) {
         return repository.findByChatroomId(chatroomId);
+    }
+
+    // 獲取多個聊天室的最新情緒分析記錄
+    public List<DailyEmotionAnalysis> getLatestAnalysisForChatrooms(List<String> chatroomIds) {
+        List<DailyEmotionAnalysis> allAnalyses = repository.findByChatroomIdIn(chatroomIds);
+
+        // 為每個聊天室找出最新的分析記錄
+        Map<String, DailyEmotionAnalysis> latestByChatroom = new HashMap<>();
+        for (DailyEmotionAnalysis analysis : allAnalyses) {
+            String chatroomId = analysis.getChatroomId();
+            DailyEmotionAnalysis existing = latestByChatroom.get(chatroomId);
+
+            if (existing == null ||
+                    analysis.getDateString().compareTo(existing.getDateString()) > 0) {
+                latestByChatroom.put(chatroomId, analysis);
+            }
+        }
+
+        return new ArrayList<>(latestByChatroom.values());
     }
 
     // 刪除當天的情緒分析記錄
