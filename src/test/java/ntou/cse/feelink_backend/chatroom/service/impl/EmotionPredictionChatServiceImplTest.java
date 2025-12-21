@@ -1,52 +1,108 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.Candidate;
-import com.google.cloud.vertexai.api.Content;
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import org.junit.jupiter.api.BeforeEach;
+import com.google.genai.Chat;
+import com.google.genai.types.GenerateContentResponse;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import com.google.cloud.vertexai.api.Part;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.io.IOException;
-import java.util.Collections;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for EmotionPredictionChatServiceImpl
+ */
+@ExtendWith(MockitoExtension.class)
 class EmotionPredictionChatServiceImplTest {
-    @Mock private ChatSession chatSession;
-    @Mock private GenerateContentResponse mockResponse;
-    @InjectMocks private EmotionPredictionChatServiceImpl service;
+
+    @Mock
+    private Chat emotionPredictorChatSession;
+
+    @Mock
+    private GenerateContentResponse mockResponse;
+
+    private EmotionPredictionChatServiceImpl service;
 
     @BeforeEach
-    void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
-        when(mockResponse.toString()).thenReturn("Mock AI 回應");
-        Candidate cand = mock(Candidate.class);
-        Content content = mock(Content.class);
-        Part part = mock(Part.class);
-        when(part.getText()).thenReturn("Mock AI 回應");
-        when(content.getPartsList()).thenReturn(Collections.singletonList(part));
-        when(cand.getContent()).thenReturn(content);
-        when(mockResponse.getCandidatesCount()).thenReturn(1);
-        when(mockResponse.getCandidates(0)).thenReturn(cand);
-        when(chatSession.sendMessage(anyString())).thenReturn(mockResponse);
+    void setUp() {
+        service = new EmotionPredictionChatServiceImpl(emotionPredictorChatSession);
     }
 
     @Test
-    void normalText() throws IOException {
-        String resp = service.processChat("今天天氣很好");
-        assertEquals("Mock AI 回應", resp);
-        verify(chatSession).sendMessage("今天天氣很好");
+    void testProcessChatWithValidMessage() throws IOException {
+        String userMessage = "我今天很開心";
+        when(emotionPredictorChatSession.sendMessage(userMessage)).thenReturn(mockResponse);
+        when(mockResponse.text()).thenReturn("快樂");
+
+        String result = service.processChat(userMessage);
+
+        assertEquals("快樂", result);
+        verify(emotionPredictorChatSession).sendMessage(userMessage);
+        verify(mockResponse).text();
     }
 
     @Test
-    void exception_returnsErrorMessage() throws IOException {
-        when(chatSession.sendMessage("Err")).thenThrow(new RuntimeException("fail"));
-        String resp = service.processChat( "Err");
-        assertEquals("AI處理情緒預測錯誤", resp);
+    void testProcessChatWithSadMessage() throws IOException {
+        String userMessage = "我感到很難過";
+        when(emotionPredictorChatSession.sendMessage(userMessage)).thenReturn(mockResponse);
+        when(mockResponse.text()).thenReturn("悲傷");
+
+        String result = service.processChat(userMessage);
+
+        assertEquals("悲傷", result);
+    }
+
+    @Test
+    void testProcessChatWithException() throws IOException {
+        String userMessage = "測試訊息";
+        when(emotionPredictorChatSession.sendMessage(userMessage))
+                .thenThrow(new RuntimeException("API 錯誤"));
+
+        String result = service.processChat(userMessage);
+
+        assertEquals("AI處理情緒預測錯誤", result);
+        verify(emotionPredictorChatSession).sendMessage(userMessage);
+    }
+
+    @Test
+    void testProcessChatWithEmptyMessage() throws IOException {
+        String userMessage = "";
+        when(emotionPredictorChatSession.sendMessage(userMessage)).thenReturn(mockResponse);
+        when(mockResponse.text()).thenReturn("中性");
+
+        String result = service.processChat(userMessage);
+
+        assertEquals("中性", result);
+        verify(emotionPredictorChatSession).sendMessage(userMessage);
+    }
+
+
+
+    @Test
+    void testProcessChatWithLongMessage() throws IOException {
+        String longMessage = "這是很長的訊息".repeat(50);
+        when(emotionPredictorChatSession.sendMessage(longMessage)).thenReturn(mockResponse);
+        when(mockResponse.text()).thenReturn("焦慮");
+
+        String result = service.processChat(longMessage);
+
+        assertEquals("焦慮", result);
+        verify(emotionPredictorChatSession).sendMessage(longMessage);
+    }
+
+    @Test
+    void testProcessChatWithSpecialCharacters() throws IOException {
+        String specialMessage = "我@#$%感覺!!!???";
+        when(emotionPredictorChatSession.sendMessage(specialMessage)).thenReturn(mockResponse);
+        when(mockResponse.text()).thenReturn("困惑");
+
+        String result = service.processChat(specialMessage);
+
+        assertEquals("困惑", result);
     }
 }

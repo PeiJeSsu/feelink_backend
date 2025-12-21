@@ -5,9 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.Date;
 
-/**
- * Unit tests for ChatMessage model
- */
+
 class ChatMessageTest {
 
     private ChatMessage chatMessage;

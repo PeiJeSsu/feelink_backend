@@ -1,522 +1,207 @@
 package ntou.cse.feelink_backend.chatroom.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.genai.Client;
+import com.google.genai.Models;
+import com.google.genai.types.*;
 import ntou.cse.feelink_backend.chatroom.model.GeminiResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GeminiServiceTest {
 
     @Mock
-    private RestTemplate restTemplate;
+    private Client client;
 
+    @Mock
+    private Models models;
+
+    @InjectMocks
     private GeminiService geminiService;
-    private ObjectMapper objectMapper;
 
-    private static final String TEST_API_KEY = "test-api-key";
-    private static final String TEST_PROMPT = "Generate a simple drawing";
-    private static final String TEST_CANVAS_DATA = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+    @Mock private GenerateContentResponse mockResponse;
+    @Mock private Candidate mockCandidate;
+    @Mock private Content mockContent;
+    @Mock private Part mockTextPart;
+    @Mock private Part mockImagePart;
+    @Mock private Blob mockBlob;
+
+    private final String VALID_BASE64_IMAGE = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    private final String VALID_BASE64_WITH_PREFIX = "data:image/png;base64," + VALID_BASE64_IMAGE;
 
     @BeforeEach
     void setUp() {
-        geminiService = new GeminiService();
-        objectMapper = new ObjectMapper();
-
-        // 使用反射設置私有字段
-        ReflectionTestUtils.setField(geminiService, "apiKey", TEST_API_KEY);
-        ReflectionTestUtils.setField(geminiService, "restTemplate", restTemplate);
-        ReflectionTestUtils.setField(geminiService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(client, "models", models);
     }
 
+    private void setupMockResponse(String text, byte[] imageBytes) throws Exception {
+        when(models.generateContent(anyString(), any(Content.class), any(GenerateContentConfig.class)))
+                .thenReturn(mockResponse);
+
+        when(mockResponse.candidates()).thenReturn(Optional.of(List.of(mockCandidate)));
+        when(mockCandidate.content()).thenReturn(Optional.of(mockContent));
+
+        List<Part> parts;
+        if (imageBytes != null) {
+            when(mockImagePart.text()).thenReturn(Optional.empty());
+            when(mockImagePart.inlineData()).thenReturn(Optional.of(mockBlob));
+            when(mockBlob.data()).thenReturn(Optional.of(imageBytes));
+
+            when(mockTextPart.text()).thenReturn(Optional.ofNullable(text));
+            when(mockTextPart.inlineData()).thenReturn(Optional.empty());
+
+            parts = List.of(mockTextPart, mockImagePart);
+        } else {
+            when(mockTextPart.text()).thenReturn(Optional.ofNullable(text));
+            when(mockTextPart.inlineData()).thenReturn(Optional.empty());
+            parts = List.of(mockTextPart);
+        }
+
+        when(mockContent.parts()).thenReturn(Optional.of(parts));
+    }
+
+
     @Test
-    void testGenerateImage_DrawingMode_Success() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Generated image description"
-                            },
-                            {
-                                "inlineData": {
-                                    "data": "base64ImageData"
-                                }
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
+    void testGenerateImage_ModeDrawing() throws Exception {
+        setupMockResponse("Drawing Result", null);
 
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
+        GeminiResponse result = geminiService.generateImage("draw a cat", VALID_BASE64_IMAGE, "drawing");
 
-        // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing");
-
-        // Assert
-        assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals("Generated image description", result.getMessage());
-        assertEquals("base64ImageData", result.getImageData());
+        assertEquals("Drawing Result", result.getMessage());
+        ArgumentMatcher<Content> contentMatcher = content -> {
+            if (content.parts().isEmpty() || content.parts().get().isEmpty()) return false;
 
-        // Verify API call
-        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+            String text = content.parts().get().get(0).text().orElse("");
+            return text.contains("指示要添加、移除或更改的部分之外") && text.contains("draw a cat");
+        };
 
-        verify(restTemplate).exchange(urlCaptor.capture(), eq(HttpMethod.POST),
-                entityCaptor.capture(), eq(String.class));
-
-        assertTrue(urlCaptor.getValue().contains("gemini-2.0-flash-preview-image-generation:generateContent"));
-        assertTrue(urlCaptor.getValue().contains(TEST_API_KEY));
-    }
-
-    @Test
-    void testGenerateImage_GenerateObjectMode_Success() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Generated object image"
-                            },
-                            {
-                                "inlineData": {
-                                    "data": "objectImageData"
-                                }
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "generateObject");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals("Generated object image", result.getMessage());
-        assertEquals("objectImageData", result.getImageData());
-    }
-
-    @Test
-    void testGenerateImage_WithoutCanvasData() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Generated without canvas"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, null, "drawing");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals("Generated without canvas", result.getMessage());
-        assertNull(result.getImageData());
-    }
-
-    @Test
-    void testGenerateImage_EmptyCanvasData() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Generated with empty canvas"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, "", "drawing");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals("Generated with empty canvas", result.getMessage());
-    }
-
-    @Test
-    void testGenerateImage_InvalidResponse() {
-        // Arrange
-        String invalidResponse = "{ \"invalid\": \"response\" }";
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(invalidResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing"));
-
-        assertTrue(exception.getMessage().contains("Invalid response format from Gemini API"));
-    }
-
-    @Test
-    void testGenerateImage_RestTemplateException() {
-        // Arrange
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenThrow(new RuntimeException("Network error"));
-
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing"));
-
-        assertTrue(exception.getMessage().contains("Error generating image"));
-        assertTrue(exception.getCause().getMessage().contains("Network error"));
-    }
-
-    @Test
-    void testGenerateImageStream_Success() throws InterruptedException {
-        // Arrange
-        String mockStreamResponse = """
-            {"candidates": [{"content": {"parts": [{"text": "First token"}]}}]}
-            {"candidates": [{"content": {"parts": [{"text": " Second token"}]}}]}
-            {"candidates": [{"content": {"parts": [{"inlineData": {"data": "streamImageData"}}]}}]}
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockStreamResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Test data collectors
-        AtomicReference<String> tokenResult = new AtomicReference<>("");
-        AtomicReference<String> imageResult = new AtomicReference<>();
-        AtomicReference<Boolean> completed = new AtomicReference<>(false);
-        AtomicReference<Exception> errorResult = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-
-        // Act
-        geminiService.generateImageStream(
-                TEST_PROMPT,
-                TEST_CANVAS_DATA,
-                token -> tokenResult.set(tokenResult.get() + token),
-                image -> imageResult.set(image),
-                () -> {
-                    completed.set(true);
-                    latch.countDown();
-                },
-                error -> {
-                    errorResult.set(error);
-                    latch.countDown();
-                }
+        verify(models).generateContent(
+                eq("gemini-2.5-flash-image"),
+                argThat(contentMatcher),
+                any(GenerateContentConfig.class)
         );
-
-        // Wait for completion
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        // Assert
-        assertTrue(completed.get());
-        assertNull(errorResult.get());
-        assertEquals("First token Second token", tokenResult.get());
-        assertEquals("streamImageData", imageResult.get());
-
-        // Verify stream API call
-        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-        verify(restTemplate, timeout(1000)).exchange(urlCaptor.capture(), eq(HttpMethod.POST),
-                any(HttpEntity.class), eq(String.class));
-
-        assertTrue(urlCaptor.getValue().contains("gemini-2.0-flash-exp:streamGenerateContent"));
     }
 
     @Test
-    void testGenerateImageStream_WithError() throws InterruptedException {
-        // Arrange
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenThrow(new RuntimeException("Stream error"));
+    void testGenerateImage_ModeGenerateObject() throws Exception {
+        setupMockResponse("Object Result", null);
 
-        AtomicReference<Exception> errorResult = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
+        GeminiResponse result = geminiService.generateImage("make a cup", VALID_BASE64_IMAGE, "generateObject");
 
-        // Act
-        geminiService.generateImageStream(
-                TEST_PROMPT,
-                TEST_CANVAS_DATA,
-                token -> {},
-                image -> {},
-                () -> latch.countDown(),
-                error -> {
-                    errorResult.set(error);
-                    latch.countDown();
-                }
+        assertTrue(result.isSuccess());
+
+        ArgumentMatcher<Content> contentMatcher = content -> {
+            if (content.parts().isEmpty() || content.parts().get().isEmpty()) return false;
+            String text = content.parts().get().get(0).text().orElse("");
+            return text.contains("生成一個獨立的") && text.contains("make a cup");
+        };
+
+        verify(models).generateContent(
+                eq("gemini-2.5-flash-image"),
+                argThat(contentMatcher),
+                any(GenerateContentConfig.class)
         );
-
-        // Wait for completion
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        // Assert
-        assertNotNull(errorResult.get());
-        assertTrue(errorResult.get().getMessage().contains("Stream error"));
     }
 
     @Test
-    void testGenerateImageStream_InvalidStreamResponse() throws InterruptedException {
-        // Arrange
-        String invalidStreamResponse = "invalid json line\n{\"valid\": \"but incomplete\"}\n";
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(invalidStreamResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
+    void testGenerateImage_ModeDefault() throws Exception {
+        setupMockResponse("Default Result", null);
 
-        AtomicReference<Boolean> completed = new AtomicReference<>(false);
-        CountDownLatch latch = new CountDownLatch(1);
+        GeminiResponse result = geminiService.generateImage("test", VALID_BASE64_IMAGE, "unknown_mode");
 
-        // Act
-        geminiService.generateImageStream(
-                TEST_PROMPT,
-                null,
-                token -> {},
-                image -> {},
-                () -> {
-                    completed.set(true);
-                    latch.countDown();
-                },
-                error -> latch.countDown()
+        assertTrue(result.isSuccess());
+
+        ArgumentMatcher<Content> contentMatcher = content -> {
+            if (content.parts().isEmpty() || content.parts().get().isEmpty()) return false;
+            String text = content.parts().get().get(0).text().orElse("");
+            return text.contains("生成圖片並用繁體中文回應");
+        };
+
+        verify(models).generateContent(
+                eq("gemini-2.5-flash-image"),
+                argThat(contentMatcher),
+                any(GenerateContentConfig.class)
         );
-
-        // Wait for completion
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        // Assert - should complete successfully despite invalid lines (they are ignored)
-        assertTrue(completed.get());
     }
 
     @Test
-    void testSystemInstructions_Content() {
-        // Use reflection to access private method for testing
-        String systemInstructions = (String) ReflectionTestUtils.invokeMethod(
-                geminiService, "getSystemInstructions");
+    void testGenerateImage_CanvasDataWithPrefix() throws Exception {
+        setupMockResponse("Success", null);
 
-        assertNotNull(systemInstructions);
-        assertTrue(systemInstructions.contains("圖像生成助手"));
-        assertTrue(systemInstructions.contains("嚴禁任何文字出現在圖像上"));
-        assertTrue(systemInstructions.contains("簡單的線條塗鴉風格"));
-        assertTrue(systemInstructions.contains("使用者原始請求所用的語言"));
+        geminiService.generateImage("prompt", VALID_BASE64_WITH_PREFIX, "default");
+
+        ArgumentMatcher<Content> contentMatcher = content ->
+                content.parts().isPresent() && content.parts().get().size() == 2;
+
+        verify(models).generateContent(
+                anyString(),
+                argThat(contentMatcher),
+                any(GenerateContentConfig.class)
+        );
     }
 
-    @Test
-    void testBuildRequestBody_WithCanvasData() {
-        // Use reflection to test private method
-        String systemInstructions = "test instructions";
-        Object requestBody = ReflectionTestUtils.invokeMethod(
-                geminiService, "buildRequestBody", TEST_PROMPT, TEST_CANVAS_DATA, systemInstructions);
-
-        assertNotNull(requestBody);
-        // Additional assertions would require casting to Map and checking structure
-    }
 
     @Test
-    void testBuildRequestBody_WithoutCanvasData() {
-        // Use reflection to test private method
-        String systemInstructions = "test instructions";
-        Object requestBody = ReflectionTestUtils.invokeMethod(
-                geminiService, "buildRequestBody", TEST_PROMPT, null, systemInstructions);
+    void testGenerateImage_WithImageResponse() throws Exception {
+        byte[] fakeImage = new byte[]{1, 2, 3};
+        setupMockResponse("Here is your image", fakeImage);
 
-        assertNotNull(requestBody);
-        // Additional assertions would require casting to Map and checking structure
-    }
+        GeminiResponse result = geminiService.generateImage("prompt", VALID_BASE64_IMAGE, "default");
 
-    @Test
-    void testParseGeminiResponse_OnlyText() {
-        // Arrange
-        String responseWithOnlyText = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Only text response"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        // Act
-        GeminiResponse result = (GeminiResponse) ReflectionTestUtils.invokeMethod(
-                geminiService, "parseGeminiResponse", responseWithOnlyText);
-
-        // Assert
-        assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals("Only text response", result.getMessage());
-        assertNull(result.getImageData());
+        assertEquals("Here is your image", result.getMessage());
+        assertNotNull(result.getImageData());
+        assertEquals(Base64.getEncoder().encodeToString(fakeImage), result.getImageData());
     }
 
     @Test
-    void testParseGeminiResponse_OnlyImage() {
-        // Arrange
-        String responseWithOnlyImage = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "inlineData": {
-                                    "data": "onlyImageData"
-                                }
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
+    void testGenerateImage_EmptyTextResponse() throws Exception {
+        setupMockResponse("", new byte[]{1});
 
-        // Act
-        GeminiResponse result = (GeminiResponse) ReflectionTestUtils.invokeMethod(
-                geminiService, "parseGeminiResponse", responseWithOnlyImage);
+        GeminiResponse result = geminiService.generateImage("prompt", VALID_BASE64_IMAGE, "default");
 
-        // Assert
-        assertNotNull(result);
         assertTrue(result.isSuccess());
-        assertEquals("", result.getMessage());
-        assertEquals("onlyImageData", result.getImageData());
+        assertEquals("圖片處理完成", result.getMessage());
+    }
+
+
+    @Test
+    void testGenerateImage_ClientException() throws Exception {
+        when(models.generateContent(anyString(), any(Content.class), any(GenerateContentConfig.class)))
+                .thenThrow(new RuntimeException("API Connection Failed"));
+
+        GeminiResponse result = geminiService.generateImage("prompt", VALID_BASE64_IMAGE, "default");
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("圖片生成失敗"));
     }
 
     @Test
-    void testGenerateImage_DrawingMode_SystemInstructions() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Drawing mode response"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
+    void testConvertToGeminiResponse_ParsingException() throws Exception {
+        when(models.generateContent(anyString(), any(Content.class), any(GenerateContentConfig.class))).thenReturn(mockResponse);
+        when(mockResponse.candidates()).thenThrow(new RuntimeException("Parsing Error"));
 
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
+        GeminiResponse result = geminiService.generateImage("prompt", VALID_BASE64_IMAGE, "default");
 
-        // Act
-        geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "drawing");
-
-        // Assert - verify that the request was made (system instructions are embedded in request)
-        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
-        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST),
-                entityCaptor.capture(), eq(String.class));
-
-        // The system instructions should be in the request body
-        assertNotNull(entityCaptor.getValue().getBody());
-    }
-
-    @Test
-    void testGenerateImage_GenerateObjectMode_SystemInstructions() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Object generation response"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act
-        geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "generateObject");
-
-        // Assert - verify that the request was made
-        ArgumentCaptor<HttpEntity> entityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
-        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST),
-                entityCaptor.capture(), eq(String.class));
-
-        // The system instructions should be in the request body
-        assertNotNull(entityCaptor.getValue().getBody());
-    }
-
-    @Test
-    void testGenerateImage_UnknownMode() {
-        // Arrange
-        String mockResponse = """
-            {
-                "candidates": [{
-                    "content": {
-                        "parts": [
-                            {
-                                "text": "Unknown mode response"
-                            }
-                        ]
-                    }
-                }]
-            }
-            """;
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
-                .thenReturn(responseEntity);
-
-        // Act - using an unknown mode should still work (no system instructions will be set)
-        GeminiResponse result = geminiService.generateImage(TEST_PROMPT, TEST_CANVAS_DATA, "unknownMode");
-
-        // Assert
-        assertNotNull(result);
-        assertTrue(result.isSuccess());
-        assertEquals("Unknown mode response", result.getMessage());
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("處理回應失敗"));
     }
 }

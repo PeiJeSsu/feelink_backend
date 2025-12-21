@@ -1,12 +1,10 @@
 package ntou.cse.feelink_backend.chatroom.model;
 
+import ntou.cse.feelink_backend.common.enums.AIPartner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for Chatroom model
- */
 class ChatroomTest {
 
     private Chatroom chatroom;
@@ -22,30 +20,47 @@ class ChatroomTest {
         assertNull(chatroom.getChatroomId());
         assertNull(chatroom.getUserId());
         assertNull(chatroom.getTitle());
+        assertNull(chatroom.getAiPartner());
     }
 
     @Test
     void testAllArgsConstructor() {
-        Chatroom room = new Chatroom("chat123", "user456", "My Chatroom");
+        Chatroom room = new Chatroom("chatroom123", "user456", "測試聊天室", AIPartner.MUSE);
 
-        assertEquals("chat123", room.getChatroomId());
+        assertEquals("chatroom123", room.getChatroomId());
         assertEquals("user456", room.getUserId());
-        assertEquals("My Chatroom", room.getTitle());
+        assertEquals("測試聊天室", room.getTitle());
+        assertEquals(AIPartner.MUSE, room.getAiPartner());
     }
 
     @Test
     void testSettersAndGetters() {
-        chatroom.setChatroomId("newChatroom");
-        chatroom.setUserId("newUser");
-        chatroom.setTitle("New Title");
+        chatroom.setChatroomId("chatroom789");
+        chatroom.setUserId("user123");
+        chatroom.setTitle("AI 聊天室");
+        chatroom.setAiPartner(AIPartner.QIQI);
 
-        assertEquals("newChatroom", chatroom.getChatroomId());
-        assertEquals("newUser", chatroom.getUserId());
-        assertEquals("New Title", chatroom.getTitle());
+        assertEquals("chatroom789", chatroom.getChatroomId());
+        assertEquals("user123", chatroom.getUserId());
+        assertEquals("AI 聊天室", chatroom.getTitle());
+        assertEquals(AIPartner.QIQI, chatroom.getAiPartner());
     }
 
     @Test
-    void testEmptyValues() {
+    void testNullValues() {
+        chatroom.setChatroomId(null);
+        chatroom.setUserId(null);
+        chatroom.setTitle(null);
+        chatroom.setAiPartner(null);
+
+        assertNull(chatroom.getChatroomId());
+        assertNull(chatroom.getUserId());
+        assertNull(chatroom.getTitle());
+        assertNull(chatroom.getAiPartner());
+    }
+
+    @Test
+    void testEmptyStringValues() {
         chatroom.setChatroomId("");
         chatroom.setUserId("");
         chatroom.setTitle("");
@@ -56,61 +71,45 @@ class ChatroomTest {
     }
 
     @Test
-    void testNullValues() {
-        chatroom.setChatroomId(null);
-        chatroom.setUserId(null);
-        chatroom.setTitle(null);
-
-        assertNull(chatroom.getChatroomId());
-        assertNull(chatroom.getUserId());
-        assertNull(chatroom.getTitle());
+    void testSetAiPartnerMuse() {
+        chatroom.setAiPartner(AIPartner.MUSE);
+        assertEquals(AIPartner.MUSE, chatroom.getAiPartner());
     }
 
     @Test
-    void testLongTitles() {
-        String longTitle = "This is a very long chatroom title that might be used for testing purposes and contains many characters to test the boundary conditions";
-        chatroom.setTitle(longTitle);
-
-        assertEquals(longTitle, chatroom.getTitle());
+    void testSetAiPartnerQiQi() {
+        chatroom.setAiPartner(AIPartner.QIQI);
+        assertEquals(AIPartner.QIQI, chatroom.getAiPartner());
     }
 
     @Test
-    void testSpecialCharactersInTitle() {
-        String specialTitle = "Chat@#$%^&*()_+-=[]{}|;':\",./<>?";
-        chatroom.setTitle(specialTitle);
-
-        assertEquals(specialTitle, chatroom.getTitle());
+    void testSetAiPartnerNuanNuan() {
+        chatroom.setAiPartner(AIPartner.NUANNUAN);
+        assertEquals(AIPartner.NUANNUAN, chatroom.getAiPartner());
     }
 
     @Test
-    void testUnicodeCharactersInTitle() {
-        String unicodeTitle = "聊天室標題 ";
-        chatroom.setTitle(unicodeTitle);
+    void testEqualsAndHashCode() {
+        Chatroom room1 = new Chatroom("chatroom1", "user1", "Room 1", AIPartner.MUSE);
+        Chatroom room2 = new Chatroom("chatroom1", "user1", "Room 1", AIPartner.MUSE);
+        Chatroom room3 = new Chatroom("chatroom2", "user2", "Room 2", AIPartner.QIQI);
 
-        assertEquals(unicodeTitle, chatroom.getTitle());
+        assertEquals(room1, room2);
+        assertNotEquals(room1, room3);
+        assertEquals(room1.hashCode(), room2.hashCode());
     }
 
     @Test
-    void testChatroomCreationScenario() {
-        // Simulate creating a new chatroom
-        chatroom.setChatroomId("chatroom_" + System.currentTimeMillis());
-        chatroom.setUserId("user_123");
-        chatroom.setTitle("AI Drawing Chat");
+    void testToString() {
+        chatroom.setChatroomId("chatroom123");
+        chatroom.setUserId("user456");
+        chatroom.setTitle("測試標題");
+        chatroom.setAiPartner(AIPartner.NUANNUAN);
 
-        assertNotNull(chatroom.getChatroomId());
-        assertTrue(chatroom.getChatroomId().startsWith("chatroom_"));
-        assertEquals("user_123", chatroom.getUserId());
-        assertEquals("AI Drawing Chat", chatroom.getTitle());
-    }
-
-    @Test
-    void testEquality() {
-        Chatroom chatroom1 = new Chatroom("chat1", "user1", "Title1");
-        Chatroom chatroom2 = new Chatroom("chat1", "user1", "Title1");
-        Chatroom chatroom3 = new Chatroom("chat2", "user1", "Title1");
-
-        // Note: Since the class uses Lombok @Data, it should have equals method
-        assertEquals(chatroom1, chatroom2);
-        assertNotEquals(chatroom1, chatroom3);
+        String result = chatroom.toString();
+        assertNotNull(result);
+        assertTrue(result.contains("chatroom123"));
+        assertTrue(result.contains("user456"));
+        assertTrue(result.contains("測試標題"));
     }
 }

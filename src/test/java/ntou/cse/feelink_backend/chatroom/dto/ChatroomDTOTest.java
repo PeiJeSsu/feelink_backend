@@ -1,5 +1,6 @@
 package ntou.cse.feelink_backend.chatroom.dto;
 
+import ntou.cse.feelink_backend.common.enums.AIPartner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,9 +28,9 @@ class ChatroomDTOTest {
         String chatroomId = "room-123";
         String userId = "user-456";
         String title = "Test Chatroom";
-
+        AIPartner aipartner = AIPartner.fromName("muse");
         // When
-        ChatroomDTO dto = new ChatroomDTO(chatroomId, userId, title);
+        ChatroomDTO dto = new ChatroomDTO(chatroomId, userId, title, aipartner);
 
         // Then
         assertNotNull(dto);
@@ -84,7 +85,7 @@ class ChatroomDTOTest {
     @DisplayName("Should handle null values in constructor")
     void testConstructorWithNullValues() {
         // When
-        ChatroomDTO dto = new ChatroomDTO(null, null, null);
+        ChatroomDTO dto = new ChatroomDTO(null, null, null,null);
 
         // Then
         assertNotNull(dto);

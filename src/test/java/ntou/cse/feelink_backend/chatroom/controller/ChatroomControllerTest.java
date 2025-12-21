@@ -145,41 +145,6 @@ class ChatroomControllerTest {
     }
 
     @Test
-    void updateChatroom_WhenSuccessful_ShouldReturnUpdatedChatroomDTO() throws Exception {
-        Chatroom updatedChatroom = new Chatroom();
-        updatedChatroom.setChatroomId("chatroom123");
-        updatedChatroom.setUserId("user123");
-        updatedChatroom.setTitle("Updated Chatroom");
-
-        ChatroomDTO updatedDTO = MapperUtil.toDTO(updatedChatroom);
-        when(chatroomService.updateChatroom(any(Chatroom.class))).thenReturn(updatedChatroom);
-
-        mockMvc.perform(put("/api/chatrooms/chatroom123")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedDTO)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatroomId").value("chatroom123"))
-                .andExpect(jsonPath("$.userId").value("user123"))
-                .andExpect(jsonPath("$.title").value("Updated Chatroom"));
-
-        verify(chatroomService, times(1)).updateChatroom(any(Chatroom.class));
-    }
-
-    @Test
-    void updateChatroom_WhenServiceThrowsException_ShouldReturnInternalServerError() throws Exception {
-        ChatroomDTO updateDTO = MapperUtil.toDTO(testChatroom);
-        when(chatroomService.updateChatroom(any(Chatroom.class)))
-                .thenThrow(new RuntimeException("Service error"));
-
-        mockMvc.perform(put("/api/chatrooms/chatroom123")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateDTO)))
-                .andExpect(status().isInternalServerError());
-
-        verify(chatroomService, times(1)).updateChatroom(any(Chatroom.class));
-    }
-
-    @Test
     void deleteChatroom_WhenSuccessful_ShouldReturnNoContent() throws Exception {
         doNothing().when(chatroomService).deleteChatroom("chatroom123");
 

@@ -1,171 +1,131 @@
 package ntou.cse.feelink_backend.chatroom.dto;
 
+import ntou.cse.feelink_backend.common.enums.AIPartner;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
-
+/**
+ * Unit tests for UserDTO
+ */
 class UserDTOTest {
 
-    @Test
-    @DisplayName("Should create UserDTO with no-args constructor")
-    void testNoArgsConstructor() {
-        // When
-        UserDTO dto = new UserDTO();
+    private UserDTO userDTO;
 
-        // Then
-        assertNotNull(dto);
-        assertNull(dto.getUserId());
-        assertNull(dto.getEmail());
-        assertNull(dto.getNickname());
-        assertNull(dto.getAINickname());
+    @BeforeEach
+    void setUp() {
+        userDTO = new UserDTO();
     }
 
     @Test
-    @DisplayName("Should create UserDTO with all-args constructor")
-    void testAllArgsConstructor() {
-        // Given
-        String userId = "user-123";
-        String email = "test@example.com";
-        String nickname = "TestUser";
-        String aiNickname = "AI-TestUser";
-
-        // When
-        UserDTO dto = new UserDTO(userId, email, nickname, aiNickname);
-
-        // Then
-        assertNotNull(dto);
-        assertEquals(userId, dto.getUserId());
-        assertEquals(email, dto.getEmail());
-        assertEquals(nickname, dto.getNickname());
-        assertEquals(aiNickname, dto.getAINickname());
+    void testDefaultConstructor() {
+        assertNotNull(userDTO);
+        assertNull(userDTO.getUserId());
+        assertNull(userDTO.getEmail());
+        assertNull(userDTO.getNickname());
+        assertNull(userDTO.getAINickname());
+        assertNull(userDTO.getPreferredAIPartner());
     }
 
     @Test
-    @DisplayName("Should set and get userId correctly")
-    void testUserIdGetterSetter() {
-        // Given
-        UserDTO dto = new UserDTO();
-        String userId = "test-user-id";
+    void testParameterizedConstructor() {
+        UserDTO dto = new UserDTO("user123", "test@example.com", "測試用戶", "小助手", AIPartner.MUSE);
 
-        // When
-        dto.setUserId(userId);
-
-        // Then
-        assertEquals(userId, dto.getUserId());
+        assertEquals("user123", dto.getUserId());
+        assertEquals("test@example.com", dto.getEmail());
+        assertEquals("測試用戶", dto.getNickname());
+        assertEquals("小助手", dto.getAINickname());
+        assertEquals(AIPartner.MUSE, dto.getPreferredAIPartner());
     }
 
     @Test
-    @DisplayName("Should set and get email correctly")
-    void testEmailGetterSetter() {
-        // Given
-        UserDTO dto = new UserDTO();
-        String email = "test@example.com";
+    void testSettersAndGetters() {
+        userDTO.setUserId("user456");
+        userDTO.setEmail("user@ntou.edu.tw");
+        userDTO.setNickname("海大學生");
+        userDTO.setAINickname("AI 夥伴");
+        userDTO.setPreferredAIPartner(AIPartner.QIQI);
 
-        // When
-        dto.setEmail(email);
-
-        // Then
-        assertEquals(email, dto.getEmail());
+        assertEquals("user456", userDTO.getUserId());
+        assertEquals("user@ntou.edu.tw", userDTO.getEmail());
+        assertEquals("海大學生", userDTO.getNickname());
+        assertEquals("AI 夥伴", userDTO.getAINickname());
+        assertEquals(AIPartner.QIQI, userDTO.getPreferredAIPartner());
     }
 
     @Test
-    @DisplayName("Should set and get nickname correctly")
-    void testNicknameGetterSetter() {
-        // Given
-        UserDTO dto = new UserDTO();
-        String nickname = "TestNickname";
+    void testNullValues() {
+        userDTO.setUserId(null);
+        userDTO.setEmail(null);
+        userDTO.setNickname(null);
+        userDTO.setAINickname(null);
+        userDTO.setPreferredAIPartner(null);
 
-        // When
-        dto.setNickname(nickname);
-
-        // Then
-        assertEquals(nickname, dto.getNickname());
+        assertNull(userDTO.getUserId());
+        assertNull(userDTO.getEmail());
+        assertNull(userDTO.getNickname());
+        assertNull(userDTO.getAINickname());
+        assertNull(userDTO.getPreferredAIPartner());
     }
 
     @Test
-    @DisplayName("Should set and get AINickname correctly")
-    void testAINicknameGetterSetter() {
-        // Given
-        UserDTO dto = new UserDTO();
-        String aiNickname = "AI-TestNickname";
-
-        // When
-        dto.setAINickname(aiNickname);
-
-        // Then
-        assertEquals(aiNickname, dto.getAINickname());
+    void testSetPreferredAIPartnerMuse() {
+        userDTO.setPreferredAIPartner(AIPartner.MUSE);
+        assertEquals(AIPartner.MUSE, userDTO.getPreferredAIPartner());
     }
 
     @Test
-    @DisplayName("Should handle null values in constructor")
+    void testSetPreferredAIPartnerQiQi() {
+        userDTO.setPreferredAIPartner(AIPartner.QIQI);
+        assertEquals(AIPartner.QIQI, userDTO.getPreferredAIPartner());
+    }
+
+    @Test
+    void testSetPreferredAIPartnerNuanNuan() {
+        userDTO.setPreferredAIPartner(AIPartner.NUANNUAN);
+        assertEquals(AIPartner.NUANNUAN, userDTO.getPreferredAIPartner());
+    }
+
+    @Test
+    void testGetPreferredAIPartnerDisplayNameWhenNotNull() {
+        userDTO.setPreferredAIPartner(AIPartner.MUSE);
+        assertEquals("謬思", userDTO.getPreferredAIPartnerDisplayName());
+    }
+
+    @Test
+    void testGetPreferredAIPartnerDisplayNameWhenNull() {
+        userDTO.setPreferredAIPartner(null);
+        assertNull(userDTO.getPreferredAIPartnerDisplayName());
+    }
+
+    @Test
+    void testEmptyStringValues() {
+        userDTO.setUserId("");
+        userDTO.setEmail("");
+        userDTO.setNickname("");
+        userDTO.setAINickname("");
+
+        assertEquals("", userDTO.getUserId());
+        assertEquals("", userDTO.getEmail());
+        assertEquals("", userDTO.getNickname());
+        assertEquals("", userDTO.getAINickname());
+    }
+
+    @Test
+    void testEmailFormat() {
+        userDTO.setEmail("student@mail.ntou.edu.tw");
+        assertEquals("student@mail.ntou.edu.tw", userDTO.getEmail());
+    }
+
+    @Test
     void testConstructorWithNullValues() {
-        // When
-        UserDTO dto = new UserDTO(null, null, null, null);
+        UserDTO dto = new UserDTO(null, null, null, null, null);
 
-        // Then
         assertNotNull(dto);
         assertNull(dto.getUserId());
         assertNull(dto.getEmail());
         assertNull(dto.getNickname());
         assertNull(dto.getAINickname());
-    }
-
-    @Test
-    @DisplayName("Should handle null values in setters")
-    void testSettersWithNullValues() {
-        // Given
-        UserDTO dto = new UserDTO();
-
-        // When
-        dto.setUserId(null);
-        dto.setEmail(null);
-        dto.setNickname(null);
-        dto.setAINickname(null);
-
-        // Then
-        assertNull(dto.getUserId());
-        assertNull(dto.getEmail());
-        assertNull(dto.getNickname());
-        assertNull(dto.getAINickname());
-    }
-
-    @Test
-    @DisplayName("Should handle empty strings")
-    void testEmptyStrings() {
-        // Given
-        UserDTO dto = new UserDTO();
-
-        // When
-        dto.setUserId("");
-        dto.setEmail("");
-        dto.setNickname("");
-        dto.setAINickname("");
-
-        // Then
-        assertEquals("", dto.getUserId());
-        assertEquals("", dto.getEmail());
-        assertEquals("", dto.getNickname());
-        assertEquals("", dto.getAINickname());
-    }
-
-    @Test
-    @DisplayName("Should handle special characters in strings")
-    void testSpecialCharacters() {
-        // Given
-        UserDTO dto = new UserDTO();
-        String specialChars = "test@#$%^&*()_+-={}[]|\\:;\"'<>,.?/~`";
-
-        // When
-        dto.setUserId(specialChars);
-        dto.setEmail(specialChars);
-        dto.setNickname(specialChars);
-        dto.setAINickname(specialChars);
-
-        // Then
-        assertEquals(specialChars, dto.getUserId());
-        assertEquals(specialChars, dto.getEmail());
-        assertEquals(specialChars, dto.getNickname());
-        assertEquals(specialChars, dto.getAINickname());
+        assertNull(dto.getPreferredAIPartner());
     }
 }

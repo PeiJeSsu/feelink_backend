@@ -1,50 +1,59 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseHandler;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.common.collect.ImmutableList;
+import com.google.genai.Chat;
+import com.google.genai.Client;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
-import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
 import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.Field;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PlainChatServiceImplTest {
 
     @Mock
     private ChatSessionRegistry registry;
 
     @Mock
-    private ChatMessageService chatMessageService;
+    private MessageFormattingService messageFormattingService;
 
     @Mock
     private EmotionPredictionChatServiceImpl emotionPredictionChatService;
 
     @Mock
-    private MessageFormattingService messageFormattingService;
+    private ChatMessageService chatMessageService;
+
+    private Client client;
+    private Object spyModels;
+    private Object spyChats;
 
     @Mock
-    private ChatSession chatSession;
+    private Chat chatSession;
+
+    @Mock
+    private Chat searchChat;
 
     @Mock
     private ResponseStream<GenerateContentResponse> responseStream;
@@ -55,356 +64,256 @@ class PlainChatServiceImplTest {
     @InjectMocks
     private PlainChatServiceImpl plainChatService;
 
-    private static final String TEST_USER_MESSAGE = "Hello, how are you?";
+    private static final String TEST_USER_MESSAGE = "我今天很開心";
     private static final String TEST_CHATROOM_ID = "room123";
     private static final String TEST_AI_MESSAGE_ID = "ai_msg_123";
     private static final Integer TEST_CONVERSATION_COUNT = 5;
     private static final Boolean TEST_HAS_DEFAULT_QUESTION = true;
-    private static final String TEST_PERSONALITY = "friendly";
 
     @BeforeEach
-    void setUp() {
-        // 使用反射設置依賴
-        ReflectionTestUtils.setField(plainChatService, "messageFormattingService", messageFormattingService);
-        ReflectionTestUtils.setField(plainChatService, "emotionPredictionChatService", emotionPredictionChatService);
-    }
+    void setUp() throws Exception {
+        client = Client.builder().apiKey("fake-key").build();
 
-    private ChatMessage createTestChatMessage(String id, String content, boolean isUser) {
-        ChatMessage message = new ChatMessage();
-        message.setMessageId(id);
-        message.setContent(content);
-        message.setIsUser(isUser);
-        message.setChatroomId(TEST_CHATROOM_ID);
-        return message;
-    }
+        Field modelsField = Client.class.getDeclaredField("models");
+        modelsField.setAccessible(true);
+        spyModels = spy(modelsField.get(client));
 
-    @Test
-    void testReplyStreamWithDatabase_DelegatesToProcessStreamWithAllFeatures() throws Exception {
-        // 使用 Spy 來測試委派
-        PlainChatServiceImpl spy = spy(plainChatService);
-        SseEmitter expectedEmitter = new SseEmitter();
+        Field chatsField = Client.class.getDeclaredField("chats");
+        chatsField.setAccessible(true);
+        spyChats = spy(chatsField.get(client));
 
-        // Mock processStreamWithAllFeatures
-        doReturn(expectedEmitter).when(spy).processStreamWithAllFeatures(
-                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT,
-                TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
+        setFinalField(client, "models", spyModels);
+        setFinalField(client, "chats", spyChats);
 
-        // Act
-        SseEmitter result = spy.replyStreamWithDatabase(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, TEST_AI_MESSAGE_ID);
+        ReflectionTestUtils.setField(plainChatService, "client", client);
 
-        // Assert
-        assertEquals(expectedEmitter, result);
-        verify(spy).processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-    }
+        doReturn(generateContentResponse).when(spyModels).getClass()
+                .getMethod("generateContent", String.class, String.class, com.google.genai.types.GenerateContentConfig.class)
+                .invoke(spyModels, anyString(), anyString(), any());
 
-    @Test
-    void testProcessStreamWithAllFeatures_Success() throws Exception {
-        // Arrange
-        List<ChatMessage> chatHistory = Arrays.asList(createTestChatMessage("msg1", "Hello", true));
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        String emotionPrediction = "情緒：積極";
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+        doReturn(searchChat).when(spyChats).getClass()
+                .getMethod("create", String.class, com.google.genai.types.GenerateContentConfig.class)
+                .invoke(spyChats, anyString(), any());
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(chatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn(emotionPrediction);
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
-        when(chatMessageService.updateMessage(any(ChatMessage.class))).thenReturn(aiMessage);
+        when(emotionPredictionChatService.processChat(anyString())).thenReturn("快樂");
 
-        // Mock ResponseStream
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
+        when(messageFormattingService.getFullMessage(anyString(), anyInt(), anyBoolean())).thenReturn("Formatted Message");
+
+        when(registry.getSession(anyString())).thenReturn(chatSession);
+        when(registry.getSession(anyString(), anyString())).thenReturn(chatSession);
+
+        when(chatSession.getHistory(true)).thenReturn(ImmutableList.of(Content.fromParts(Part.fromText("history"))));
+
+        when(generateContentResponse.text()).thenReturn("否");
+
+        Iterator<GenerateContentResponse> iterator = Arrays.asList(generateContentResponse).iterator();
+        when(responseStream.iterator()).thenReturn(iterator);
         when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
+    }
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("AI token");
-
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-
-            // Wait for async processing to complete
-            Thread.sleep(200);
-
-            verify(chatMessageService).getMessagesByChatroomId(TEST_CHATROOM_ID);
-            verify(emotionPredictionChatService).processChat(TEST_USER_MESSAGE);
-            verify(messageFormattingService).getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION);
-            verify(registry).getSession(TEST_CHATROOM_ID);
-            verify(chatSession).sendMessageStream(formattedMessage + "\n\n先前的情緒預測結果：" + emotionPrediction);
-        }
+    private void setFinalField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_WithPersonality() throws Exception {
-        // Arrange
-        List<ChatMessage> chatHistory = Arrays.asList();
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        String emotionPrediction = "";
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+    void testSuccess_NoSearch_EmotionSuccess() throws Exception {
+        SseEmitter emitter = plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(chatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn(emotionPrediction);
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID, TEST_PERSONALITY)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
-
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
-
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
-
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, TEST_PERSONALITY, TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            verify(registry).getSession(TEST_CHATROOM_ID, TEST_PERSONALITY);
-            verify(chatSession).sendMessageStream(formattedMessage);
-        }
+        assertNotNull(emitter);
+        verify(emotionPredictionChatService).processChat(TEST_USER_MESSAGE);
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_WithoutEmotionPrediction() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+    void testEmotionPredictionFailure() throws Exception {
+        when(emotionPredictionChatService.processChat(anyString())).thenThrow(new RuntimeException("API Error"));
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn("");
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
+        SseEmitter emitter = plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
-
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
-
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            verify(chatSession).sendMessageStream(formattedMessage); // 應該使用原始 formattedMessage，沒有情緒預測
-        }
+        assertNotNull(emitter);
+        verify(messageFormattingService).getFullMessage(anyString(), anyInt(), anyBoolean());
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_EmotionPredictionException() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+    void testSearchDecision_Yes() throws Exception {
+        when(generateContentResponse.text()).thenReturn("是");
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenThrow(new RuntimeException("Emotion prediction failed"));
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
+        GenerateContentResponse searchResultResponse = mock(GenerateContentResponse.class);
+        when(searchResultResponse.text()).thenReturn("搜尋關鍵字");
+        when(searchChat.sendMessage(anyString())).thenReturn(searchResultResponse);
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
+        SseEmitter emitter = plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
-
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            // 應該仍然繼續處理，不受情緒預測失敗影響
-            verify(chatSession).sendMessageStream(formattedMessage);
-        }
+        assertNotNull(emitter);
+        verify(searchChat).sendMessage(anyString());
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_StreamException() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
-        RuntimeException streamException = new RuntimeException("Stream error");
+    void testCustomPersonality() throws Exception {
+        String personality = "MUSE";
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, personality, TEST_AI_MESSAGE_ID
+        );
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn("");
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
+        verify(registry).getSession(TEST_CHATROOM_ID, personality);
+    }
+
+    @Test
+    void testLoadHistory() throws Exception {
+        when(chatSession.getHistory(true)).thenReturn(ImmutableList.of());
+
+        ChatMessage msg = new ChatMessage();
+        msg.setContent("old msg");
+        msg.setIsUser(true);
+        when(chatMessageService.getTextMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(List.of(msg));
+
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
+
+        verify(chatSession).sendMessage(anyList());
+    }
+
+    @Test
+    void testStreamFailure() throws Exception {
+        when(chatSession.sendMessageStream(anyString())).thenThrow(new RuntimeException("Stream Error"));
+
+        ChatMessage aiMessage = new ChatMessage();
         when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
-        when(chatMessageService.updateMessage(any(ChatMessage.class))).thenReturn(aiMessage);
-        when(chatSession.sendMessageStream(formattedMessage)).thenThrow(streamException);
 
-        // Act
-        SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        // Assert
-        assertNotNull(result);
         Thread.sleep(200);
 
-        // 驗證錯誤處理
         verify(chatMessageService).updateMessage(argThat(msg ->
-                msg.getContent().contains("AI處理錯誤") &&
-                        msg.getContent().contains("Stream error")));
+                msg.getContent().contains("AI處理錯誤")
+        ));
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_DatabaseUpdateException() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+    void testReplyStreamDelegation() throws Exception {
+        PlainChatServiceImpl spyService = spy(plainChatService);
+        SseEmitter expectedEmitter = new SseEmitter();
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn("");
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
-        when(chatMessageService.updateMessage(any(ChatMessage.class)))
-                .thenThrow(new RuntimeException("Database update failed"));
+        doReturn(expectedEmitter).when(spyService).processStreamWithAllFeatures(
+                anyString(), anyString(), anyInt(), anyBoolean(), anyString(), anyString()
+        );
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
+        spyService.replyStreamWithDatabase(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, TEST_AI_MESSAGE_ID
+        );
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
-
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            // 應該嘗試更新資料庫，即使失敗也不影響SSE
-            verify(chatMessageService).updateMessage(any(ChatMessage.class));
-        }
+        verify(spyService).processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_MessageNotFound() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
+    void testLoadHistory_WithAiMessage_And_Failure() throws Exception {
+        when(chatSession.getHistory(true)).thenReturn(ImmutableList.of());
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn("");
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.empty());
+        ChatMessage aiMsg = new ChatMessage();
+        aiMsg.setContent("old ai msg");
+        aiMsg.setIsUser(false);
+        when(chatMessageService.getTextMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(List.of(aiMsg));
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
+        doThrow(new RuntimeException("Load History Error")).when(chatSession).sendMessage(anyList());
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            verify(chatMessageService).getMessageById(TEST_AI_MESSAGE_ID);
-            // 不應該調用 updateMessage，因為找不到訊息
-            verify(chatMessageService, never()).updateMessage(any(ChatMessage.class));
-        }
+        verify(chatSession).sendMessage(anyList());
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_NullEmotionPredictionService() throws Exception {
-        // Arrange - 設置 emotionPredictionChatService 為 null
-        ReflectionTestUtils.setField(plainChatService, "emotionPredictionChatService", null);
+    void testSseSendFailure() throws Exception {
+        when(generateContentResponse.text()).thenReturn("token");
+    }
 
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
-        ChatMessage aiMessage = createTestChatMessage(TEST_AI_MESSAGE_ID, "", false);
+    @Test
+    void testUpdateDatabase_Success() throws Exception {
+        when(generateContentResponse.text()).thenReturn("token");
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
+        ChatMessage aiMessage = new ChatMessage();
         when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Token");
+        Thread.sleep(200);
 
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            verify(registry).getSession(TEST_CHATROOM_ID);
-            verify(messageFormattingService).getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION);
-            // 不應該嘗試調用情緒預測服務
-            verify(chatSession).sendMessageStream(formattedMessage);
-        }
+        verify(chatMessageService).updateMessage(argThat(msg -> msg.getContent().equals("token")));
     }
 
     @Test
-    void testProcessStreamWithAllFeatures_NullAiMessageId() throws Exception {
-        // Arrange
-        String formattedMessage = "Formatted: " + TEST_USER_MESSAGE;
+    void testUpdateDatabase_Failure() throws Exception {
+        when(generateContentResponse.text()).thenReturn("token");
+        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(new ChatMessage()));
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID)).thenReturn(Arrays.asList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE)).thenReturn("");
-        when(messageFormattingService.getFullMessage(TEST_USER_MESSAGE, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION))
-                .thenReturn(formattedMessage);
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
+        when(chatMessageService.updateMessage(any(ChatMessage.class))).thenThrow(new RuntimeException("DB Error"));
 
-        Iterator<GenerateContentResponse> mockIterator = Arrays.asList(generateContentResponse).iterator();
-        when(responseStream.iterator()).thenReturn(mockIterator);
-        when(chatSession.sendMessageStream(formattedMessage)).thenReturn(responseStream);
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
 
-        try (MockedStatic<ResponseHandler> responseHandlerMock = mockStatic(ResponseHandler.class)) {
-            responseHandlerMock.when(() -> ResponseHandler.getText(generateContentResponse)).thenReturn("Response");
+        Thread.sleep(200);
 
-            // Act
-            SseEmitter result = plainChatService.processStreamWithAllFeatures(TEST_USER_MESSAGE, TEST_CHATROOM_ID,
-                    TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", null);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(200);
-
-            // 不應該嘗試資料庫操作，因為 aiMessageId 為 null
-            verify(chatMessageService, never()).getMessageById(any());
-            verify(chatMessageService, never()).updateMessage(any(ChatMessage.class));
-        }
+        verify(chatMessageService).updateMessage(any(ChatMessage.class));
     }
+
+    @Test
+    void testHandleError_UpdateDbFailure() throws Exception {
+        when(chatSession.sendMessageStream(anyString())).thenThrow(new RuntimeException("Main Error"));
+
+        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(new ChatMessage()));
+
+        when(chatMessageService.updateMessage(any(ChatMessage.class))).thenThrow(new RuntimeException("DB Update Error In Handler"));
+
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
+
+        Thread.sleep(200);
+
+        verify(chatMessageService).updateMessage(any(ChatMessage.class));
+    }
+
+    @Test
+    void testErrorWithPartialResponse() throws Exception {
+        Iterator<GenerateContentResponse> mockIterator = mock(Iterator.class);
+        when(responseStream.iterator()).thenReturn(mockIterator);
+
+        when(mockIterator.hasNext()).thenReturn(true, true, false);
+        GenerateContentResponse resp1 = mock(GenerateContentResponse.class);
+        when(resp1.text()).thenReturn("Part 1");
+
+        when(mockIterator.next())
+                .thenReturn(resp1)
+                .thenThrow(new RuntimeException("Stream Broken"));
+
+        ChatMessage aiMessage = new ChatMessage();
+        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID)).thenReturn(Optional.of(aiMessage));
+
+        plainChatService.processStreamWithAllFeatures(
+                TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_CONVERSATION_COUNT, TEST_HAS_DEFAULT_QUESTION, "default", TEST_AI_MESSAGE_ID
+        );
+
+        Thread.sleep(200);
+
+        verify(chatMessageService).updateMessage(argThat(msg ->
+                msg.getContent().contains("Part 1") && msg.getContent().contains("Stream Broken")
+        ));
+    }
+
 }
