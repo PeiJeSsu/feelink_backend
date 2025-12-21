@@ -4,9 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for AIDrawingResponse model
- */
 class AIDrawingResponseTest {
 
     private AIDrawingResponse aiDrawingResponse;

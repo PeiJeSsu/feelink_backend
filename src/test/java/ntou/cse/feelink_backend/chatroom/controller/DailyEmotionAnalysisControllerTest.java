@@ -36,11 +36,9 @@ class DailyEmotionAnalysisControllerTest {
 
     @BeforeEach
     void setUp() {
-        // 設定 MockMvc，包含 UTF-8 編碼支援
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
         objectMapper = new ObjectMapper();
 
-        // 初始化測試資料
         mockAnalysis = new DailyEmotionAnalysis();
         mockAnalysis.setId("analysis1");
         mockAnalysis.setChatroomId(testChatroomId);
@@ -48,7 +46,6 @@ class DailyEmotionAnalysisControllerTest {
         mockAnalysis.setSummary("Test summary");
     }
 
-    // ===== 執行並獲取今天的完整分析 =====
     @Test
     void testAnalyzeAndSaveToday_Success() throws Exception {
         when(analysisService.performAndSaveTodayAnalysis(testChatroomId)).thenReturn(mockAnalysis);
@@ -68,7 +65,6 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== 獲取今天的分析結果 =====
     @Test
     void testGetTodayAnalysis_Found() throws Exception {
         when(analysisService.getTodayAnalysis(testChatroomId)).thenReturn(mockAnalysis);
@@ -86,7 +82,6 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ===== 獲取歷史分析記錄 =====
     @Test
     void testGetHistoryAnalysis_Success() throws Exception {
         List<DailyEmotionAnalysis> history = Arrays.asList(mockAnalysis);
@@ -98,7 +93,6 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(jsonPath("$[0].id").value("analysis1"));
     }
 
-    // ===== 獲取所有分析記錄 =====
     @Test
     void testGetAllAnalysisForChatroom_Success() throws Exception {
         List<DailyEmotionAnalysis> all = Arrays.asList(mockAnalysis);
@@ -118,10 +112,9 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== 刪除指定日期的情緒分析記錄 =====
     @Test
     void testDeleteAnalysisByDate_Success_Deleted() throws Exception {
-        String dateString = "2023-10-27";
+        String dateString = "2025-10-27";
         when(analysisService.deleteAnalysisByDate(testChatroomId, dateString)).thenReturn(true);
 
         mockMvc.perform(delete("/api/emotion-analysis/chatroom/{chatroomId}/date/{dateString}", testChatroomId, dateString))
@@ -132,7 +125,7 @@ class DailyEmotionAnalysisControllerTest {
 
     @Test
     void testDeleteAnalysisByDate_Success_NotFound() throws Exception {
-        String dateString = "2023-10-27";
+        String dateString = "2025-10-27";
         when(analysisService.deleteAnalysisByDate(testChatroomId, dateString)).thenReturn(false);
 
         mockMvc.perform(delete("/api/emotion-analysis/chatroom/{chatroomId}/date/{dateString}", testChatroomId, dateString))
@@ -143,7 +136,7 @@ class DailyEmotionAnalysisControllerTest {
 
     @Test
     void testDeleteAnalysisByDate_Exception() throws Exception {
-        String dateString = "2023-10-27";
+        String dateString = "2025-10-27";
         when(analysisService.deleteAnalysisByDate(testChatroomId, dateString))
                 .thenThrow(new RuntimeException("Delete Error"));
 
@@ -153,7 +146,6 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(jsonPath("$.error").value("Delete Error"));
     }
 
-    // ===== 刪除當天的情緒分析記錄 =====
     @Test
     void testDeleteTodayAnalysis_Success_Deleted() throws Exception {
         when(analysisService.deleteTodayAnalysis(testChatroomId)).thenReturn(true);
@@ -185,7 +177,6 @@ class DailyEmotionAnalysisControllerTest {
                 .andExpect(jsonPath("$.error").value("Delete Error"));
     }
 
-    // ===== 獲取多個聊天室的最新情緒分析摘要 =====
     @Test
     void testGetLatestAnalysisForChatrooms_Success() throws Exception {
         Map<String, List<String>> request = new HashMap<>();
@@ -204,8 +195,6 @@ class DailyEmotionAnalysisControllerTest {
     @Test
     void testGetLatestAnalysisForChatrooms_BadRequest_NullList() throws Exception {
         Map<String, List<String>> request = new HashMap<>();
-        // chatroomIds is null
-
         mockMvc.perform(post("/api/emotion-analysis/chatrooms/latest-summary")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

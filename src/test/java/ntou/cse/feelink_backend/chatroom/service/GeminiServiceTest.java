@@ -142,15 +142,12 @@ class GeminiServiceTest {
         );
     }
 
-    // === 測試 Canvas Data 處理 ===
-
     @Test
     void testGenerateImage_CanvasDataWithPrefix() throws Exception {
         setupMockResponse("Success", null);
 
         geminiService.generateImage("prompt", VALID_BASE64_WITH_PREFIX, "default");
 
-        // 修正：parts() 回傳 Optional，要 .get() 之後才能 .size()
         ArgumentMatcher<Content> contentMatcher = content ->
                 content.parts().isPresent() && content.parts().get().size() == 2;
 

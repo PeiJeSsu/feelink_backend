@@ -131,7 +131,6 @@ class DailyEmotionAnalysisServiceTest {
 
     @Test
     void testGetLatestAnalysisForChatrooms() {
-        // Arrange
         String roomA = "roomA";
         String roomB = "roomB";
         List<String> roomIds = Arrays.asList(roomA, roomB);

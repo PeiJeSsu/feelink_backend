@@ -189,7 +189,7 @@ class ChatServiceImplTest {
         when(chatMessageService.getMessageById(anyString())).thenReturn(Optional.of(aiMessage));
 
         chatService.processChatStreamWithPersonality(
-                null, testUserMessage, testChatroomId, "default", "aiMsg123" // null file 走純文字路徑
+                null, testUserMessage, testChatroomId, "default", "aiMsg123"
         );
 
         Thread.sleep(200);

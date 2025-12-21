@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -87,7 +86,6 @@ class GoogleNaturalLanguageServiceTest {
 
     @Test
     void testAnalyzeSentiment_Exception() {
-        // Arrange
         when(languageServiceClient.analyzeSentiment(any(Document.class)))
                 .thenThrow(new RuntimeException("Google API Error"));
 
@@ -97,11 +95,8 @@ class GoogleNaturalLanguageServiceTest {
         assertEquals(0.0f, result.getMagnitude());
     }
 
-    // === 測試 analyzeTodaySentiment (整合流程) ===
-
     @Test
     void testAnalyzeTodaySentiment_HasMessages() {
-        // Arrange
         String chatroomId = "room1";
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(new ChatMessage("msg1", chatroomId, true, false, "很高興", new Date()));
@@ -143,7 +138,7 @@ class GoogleNaturalLanguageServiceTest {
         String chatroomId = "room1";
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(new ChatMessage("msg1", chatroomId, true, false, "User Msg", new Date()));
-        messages.add(new ChatMessage("msg2", chatroomId, false, false, "AI Msg", new Date())); // AI 訊息
+        messages.add(new ChatMessage("msg2", chatroomId, false, false, "AI Msg", new Date()));
 
         when(chatMessageService.getUserTextMessagesByDate(eq(chatroomId), anyString())).thenReturn(messages);
 

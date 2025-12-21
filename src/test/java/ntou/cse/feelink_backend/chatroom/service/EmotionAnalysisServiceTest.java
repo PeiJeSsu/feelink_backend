@@ -49,15 +49,11 @@ class EmotionAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 1. 注入 models 到 client (解決 client.models 為 null)
         ReflectionTestUtils.setField(client, "models", models);
 
-        // 2. 關鍵修正：注入 chatMessageService 到 emotionAnalysisService
-        // 因為它是 @Autowired 的 private field，@InjectMocks 有時無法正確注入
         ReflectionTestUtils.setField(emotionAnalysisService, "chatMessageService", chatMessageService);
     }
 
-    // === 測試 getTodayChatMessages ===
 
     @Test
     void testGetTodayChatMessages() {
@@ -75,7 +71,6 @@ class EmotionAnalysisServiceTest {
         assertEquals("AI: Hello", result.get(1));
     }
 
-    // === 測試 analyzeTodayEmotions ===
 
     @Test
     void testAnalyzeTodayEmotions_Success() throws Exception {
@@ -114,7 +109,6 @@ class EmotionAnalysisServiceTest {
         when(chatMessageService.getTextMessagesByDate(eq(chatroomId), anyString()))
                 .thenReturn(Collections.emptyList());
 
-        // 使用 lenient() 允許這個 Stubbing 即使沒被用到也不報錯 (預防萬一)
         lenient().when(models.generateContent(anyString(), anyString(), any()))
                 .thenThrow(new RuntimeException("API Error"));
 
@@ -123,7 +117,6 @@ class EmotionAnalysisServiceTest {
         assertEquals(-1, scores.getSadness());
     }
 
-    // === 測試 generateChatSummary ===
 
     @Test
     void testGenerateChatSummary_Success() throws Exception {

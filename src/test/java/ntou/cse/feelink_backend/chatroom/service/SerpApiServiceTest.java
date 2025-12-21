@@ -128,7 +128,7 @@ class SerpApiServiceTest {
 
     @Test
     void testSearch_NoResults() throws IOException {
-        String jsonResponse = "{}"; // 空 JSON
+        String jsonResponse = "{}";
         setupMockResponse(200, jsonResponse);
 
         String result = SerpApiService.search("something weird");
@@ -152,7 +152,7 @@ class SerpApiServiceTest {
                 .protocol(Protocol.HTTP_1_1)
                 .code(200)
                 .message("OK")
-                .body(ResponseBody.create("", MediaType.get("application/json"))) // 空 Body
+                .body(ResponseBody.create("", MediaType.get("application/json")))
                 .build();
 
         when(mockHttpClient.newCall(any(Request.class))).thenReturn(mockCall);

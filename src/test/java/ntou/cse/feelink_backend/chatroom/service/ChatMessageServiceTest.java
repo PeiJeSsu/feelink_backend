@@ -7,8 +7,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,8 +24,6 @@ class ChatMessageServiceTest {
 
     @InjectMocks
     private ChatMessageService chatMessageService;
-
-    // === 基本 CRUD ===
 
     @Test
     void testSaveMessage() {
@@ -79,8 +75,6 @@ class ChatMessageServiceTest {
         verify(chatMessageRepository).deleteById("msg1");
     }
 
-    // === 條件查詢 ===
-
     @Test
     void testGetMessagesByChatroomId() {
         when(chatMessageRepository.findByChatroomIdOrderBySentAtAsc("room1"))
@@ -117,22 +111,18 @@ class ChatMessageServiceTest {
         assertTrue(chatMessageService.getAIMessagesByChatroomId("room1").isEmpty());
     }
 
-    // === 批量刪除 ===
 
     @Test
     void testDeleteAllMessagesByChatroomId() {
-        // Arrange
         String chatroomId = "room1";
         List<ChatMessage> messages = Arrays.asList(new ChatMessage(), new ChatMessage());
         when(chatMessageRepository.findByChatroomIdOrderBySentAtAsc(chatroomId)).thenReturn(messages);
 
-        // Act
         int count = chatMessageService.deleteAllMessagesByChatroomId(chatroomId);
 
-        // Assert
         assertEquals(2, count);
         verify(chatMessageRepository).deleteByChatroomId(chatroomId);
-        verify(chatSessionRegistry).recreateSession(chatroomId); // 驗證 Session 重建
+        verify(chatSessionRegistry).recreateSession(chatroomId);
     }
 
     @Test
@@ -197,8 +187,6 @@ class ChatMessageServiceTest {
         verify(chatMessageRepository).deleteByChatroomId("room1");
     }
 
-    // === 統計 ===
-
     @Test
     void testCountMessages() {
         when(chatMessageRepository.countByChatroomId("room1")).thenReturn(10L);
@@ -217,8 +205,6 @@ class ChatMessageServiceTest {
         assertEquals(5L, chatMessageService.countAIMessagesByChatroomId("room1"));
     }
 
-    // === 日期範圍查詢 (複雜邏輯) ===
-
     @Test
     void testGetTextMessagesByDate_Success() throws Exception {
         String date = "2025-10-27";
@@ -231,7 +217,6 @@ class ChatMessageServiceTest {
         List<ChatMessage> result = chatMessageService.getTextMessagesByDate("room1", date);
 
         assertFalse(result.isEmpty());
-        // 驗證是否有正確呼叫到帶有日期範圍的 Repository 方法
         verify(chatMessageRepository).findByChatroomIdAndIsDrawingDataFalseAndSentAtBetweenOrderBySentAtAsc(
                 eq("room1"), any(Date.class), any(Date.class));
     }
@@ -261,7 +246,6 @@ class ChatMessageServiceTest {
 
     @Test
     void testCountUserTextMessagesToday() {
-        // 這個測試依賴系統時間 (new Date())，為了穩定性，我們只驗證流程有走到 Repository
         when(chatMessageRepository.countByChatroomIdAndIsUserTrueAndIsDrawingDataFalseAndSentAtBetween(
                 eq("room1"), any(Date.class), any(Date.class)))
                 .thenReturn(5);
@@ -269,8 +253,6 @@ class ChatMessageServiceTest {
         int count = chatMessageService.countUserTextMessagesToday("room1");
         assertEquals(5, count);
     }
-
-    // === 其他 ===
 
     @Test
     void testSavePreQuestionForNewChatroom() {
