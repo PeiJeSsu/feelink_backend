@@ -1,37 +1,35 @@
 package ntou.cse.feelink_backend.chatroom.service.impl;
 
-import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.generativeai.ChatSession;
-import com.google.cloud.vertexai.generativeai.ResponseStream;
+import com.google.common.collect.ImmutableList;
+import com.google.genai.Chat;
+import com.google.genai.ResponseStream;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
-import ntou.cse.feelink_backend.chatroom.service.MessageFormattingService;
 import ntou.cse.feelink_backend.chatroom.service.ChatSessionRegistry;
-import ntou.cse.feelink_backend.chatroom.service.ChatInputProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Iterator;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ChatServiceImplTest {
 
     @Mock
@@ -44,347 +42,196 @@ class ChatServiceImplTest {
     private ChatMessageService chatMessageService;
 
     @Mock
-    private MessageFormattingService messageFormattingService;
-
-    @Mock
     private ChatSessionRegistry registry;
-
-    @Mock
-    private ChatSession chatSession;
-
-    @Mock
-    private ResponseStream<GenerateContentResponse> responseStream;
-
-    @Mock
-    private GenerateContentResponse generateContentResponse;
-
-    @Mock
-    private MultipartFile mockFile;
 
     @InjectMocks
     private ChatServiceImpl chatService;
 
-    private static final String TEST_CHATROOM_ID = "test-chatroom-123";
-    private static final String TEST_USER_MESSAGE = "這是一個測試訊息";
-    private static final String TEST_AI_MESSAGE_ID = "ai-msg-456";
-    private static final String TEST_PERSONALITY = "friendly";
+    private MultipartFile mockFile;
+    private String testChatroomId;
+    private String testUserMessage;
+    private List<ChatMessage> mockChatHistory;
+
+    @Mock
+    private Chat mockChat;
+
+    @Mock
+    private ResponseStream<GenerateContentResponse> mockResponseStream;
+
+    @Mock
+    private GenerateContentResponse mockResponse;
 
     @BeforeEach
-    void setUp() {
-        // 使用 ReflectionTestUtils 設置私有欄位
-        ReflectionTestUtils.setField(chatService, "drawingAnalysisChatService", drawingAnalysisChatService);
-        ReflectionTestUtils.setField(chatService, "emotionPredictionChatService", emotionPredictionChatService);
-        ReflectionTestUtils.setField(chatService, "chatMessageService", chatMessageService);
-        ReflectionTestUtils.setField(chatService, "messageFormattingService", messageFormattingService);
-        ReflectionTestUtils.setField(chatService, "registry", registry);
+    void setUp() throws IOException {
+        mockFile = new MockMultipartFile(
+                "file",
+                "test.png",
+                "image/png",
+                "test image content".getBytes()
+        );
+        testChatroomId = "chatroom123";
+        testUserMessage = "測試訊息";
+
+        mockChatHistory = new ArrayList<>();
+        ChatMessage msg1 = new ChatMessage();
+        msg1.setContent("歷史訊息1");
+        msg1.setIsUser(true);
+        mockChatHistory.add(msg1);
+
+        when(emotionPredictionChatService.processChat(anyString())).thenReturn("快樂");
+
+        when(registry.getSession(anyString())).thenReturn(mockChat);
+        when(registry.getSession(anyString(), anyString())).thenReturn(mockChat);
+
+        when(mockChat.getHistory(anyBoolean())).thenReturn(ImmutableList.of(Content.fromParts(Part.fromText("history"))));
+
+        when(chatMessageService.getTextMessagesByChatroomId(anyString())).thenReturn(new ArrayList<>());
+
+        when(mockResponse.text()).thenReturn("token");
+        Iterator<GenerateContentResponse> iterator = Arrays.asList(mockResponse).iterator();
+        when(mockResponseStream.iterator()).thenReturn(iterator);
+        when(mockChat.sendMessageStream(any(Content.class))).thenReturn(mockResponseStream);
+        when(mockChat.sendMessageStream(anyString())).thenReturn(mockResponseStream);
     }
 
     @Test
-    void testProcessChat_Success() throws IOException {
-        // Arrange
-        List<ChatMessage> mockChatHistory = createMockChatHistory();
-        String mockEmotionPrediction = "正面情緒";
-        String mockDrawingAnalysisResponse = "這是AI的分析結果";
+    void testProcessChatWithValidInput() throws IOException {
+        when(chatMessageService.getMessagesByChatroomId(testChatroomId)).thenReturn(mockChatHistory);
+        when(drawingAnalysisChatService.processChat(any(), anyString(), eq(testChatroomId))).thenReturn("這是 AI 的回應");
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(mockChatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn(mockEmotionPrediction);
-        when(drawingAnalysisChatService.processChat(eq(mockFile), contains(mockEmotionPrediction), eq(TEST_CHATROOM_ID)))
-                .thenReturn(mockDrawingAnalysisResponse);
+        ChatMessage result = chatService.processChat(mockFile, testUserMessage, testChatroomId);
 
-        // Act
-        ChatMessage result = chatService.processChat(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID);
-
-        // Assert
         assertNotNull(result);
-        assertEquals(mockDrawingAnalysisResponse, result.getContent());
-        assertFalse(result.getIsUser());
-
-        // Verify interactions
-        verify(chatMessageService).getMessagesByChatroomId(TEST_CHATROOM_ID);
-        verify(emotionPredictionChatService).processChat(TEST_USER_MESSAGE);
-        verify(drawingAnalysisChatService).processChat(eq(mockFile),
-                eq(TEST_USER_MESSAGE + "\n\n先前的情緒預測結果：" + mockEmotionPrediction),
-                eq(TEST_CHATROOM_ID));
+        assertEquals("這是 AI 的回應", result.getContent());
     }
 
     @Test
-    void testProcessChat_EmotionPredictionFails() throws IOException {
-        // Arrange
-        List<ChatMessage> mockChatHistory = createMockChatHistory();
+    void testProcessChatWithNullFile() throws IOException {
+        when(chatMessageService.getMessagesByChatroomId(testChatroomId)).thenReturn(new ArrayList<>());
+        when(drawingAnalysisChatService.processChat(isNull(), anyString(), eq(testChatroomId))).thenReturn("無圖片的回應");
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(mockChatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenThrow(new RuntimeException("情緒預測失敗"));
+        ChatMessage result = chatService.processChat(null, testUserMessage, testChatroomId);
 
-        // Act & Assert
-        assertThrows(RuntimeException.class, () ->
-                chatService.processChat(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID));
-
-        // Verify that drawingAnalysisChatService is never called when emotion prediction fails
-        verify(drawingAnalysisChatService, never()).processChat(any(), any(), any());
-    }
-
-    @Test
-    void testProcessChat_DrawingAnalysisFails() throws IOException {
-        // Arrange
-        String mockEmotionPrediction = "正面情緒";
-
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(Collections.emptyList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn(mockEmotionPrediction);
-        when(drawingAnalysisChatService.processChat(any(), any(), any()))
-                .thenThrow(new IOException("繪圖分析失敗"));
-
-        // Act & Assert
-        assertThrows(IOException.class, () ->
-                chatService.processChat(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID));
-    }
-
-    @Test
-    void testProcessChatStream_Success() throws IOException, InterruptedException {
-        // Arrange
-        List<ChatMessage> mockChatHistory = createMockChatHistory();
-        String mockEmotionPrediction = "正面情緒";
-        ChatMessage mockAiMessage = new ChatMessage();
-        mockAiMessage.setContent("");
-        mockAiMessage.setIsUser(false);
-
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(mockChatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn(mockEmotionPrediction);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-
-        // Mock the response stream
-        setupMockResponseStream("Token1", "Token2");
-        when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-        // Act
-        SseEmitter result = chatService.processChatStream(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_AI_MESSAGE_ID);
-
-        // Assert
         assertNotNull(result);
+    }
 
-        // Wait for asynchronous processing
+    @Test
+    void testProcessChatStreamReturnsEmitter() throws IOException {
+        SseEmitter emitter = chatService.processChatStream(mockFile, testUserMessage, testChatroomId, "aiMsg123");
+
+        assertNotNull(emitter);
+        verify(registry).getSession(testChatroomId);
+    }
+
+    @Test
+    void testProcessChatStreamWithPersonalityCustomPersonality() throws IOException {
+        String personality = "MUSE";
+
+        SseEmitter emitter = chatService.processChatStreamWithPersonality(
+                mockFile, testUserMessage, testChatroomId, personality, "aiMsg123"
+        );
+
+        assertNotNull(emitter);
+        verify(registry).getSession(testChatroomId, personality);
+    }
+
+    @Test
+    void testProcessChatStreamWithEmotionPredictionFailure() throws IOException {
+        when(emotionPredictionChatService.processChat(testUserMessage)).thenThrow(new RuntimeException("情緒預測錯誤"));
+
+        SseEmitter emitter = chatService.processChatStreamWithPersonality(
+                mockFile, testUserMessage, testChatroomId, "default", "aiMsg123"
+        );
+
+        assertNotNull(emitter);
+    }
+
+    @Test
+    void testLoadHistory_And_Failure() throws IOException {
+        when(mockChat.getHistory(true)).thenReturn(ImmutableList.of());
+
+        ChatMessage msg = new ChatMessage();
+        msg.setContent("hi");
+        msg.setIsUser(true);
+        when(chatMessageService.getTextMessagesByChatroomId(testChatroomId)).thenReturn(List.of(msg));
+
+        doThrow(new RuntimeException("Load History Error")).when(mockChat).sendMessage(anyList());
+
+        chatService.processChatStreamWithPersonality(
+                mockFile, testUserMessage, testChatroomId, "default", "aiMsg123"
+        );
+
+        verify(mockChat).sendMessage(anyList());
+    }
+
+    @Test
+    void testStreamExecution_And_ImageFailure() throws Exception {
+        ChatMessage aiMessage = new ChatMessage();
+        when(chatMessageService.getMessageById(anyString())).thenReturn(Optional.of(aiMessage));
+
+        chatService.processChatStreamWithPersonality(
+                mockFile, testUserMessage, testChatroomId, "default", "aiMsg123"
+        );
+
+        Thread.sleep(200);
+
+        verify(chatMessageService).updateMessage(argThat(msg -> msg.getContent().equals("token")));
+    }
+
+    @Test
+    void testStreamConsumptionError() throws Exception {
+        Iterator<GenerateContentResponse> mockIterator = mock(Iterator.class);
+        when(mockIterator.hasNext()).thenReturn(true);
+        when(mockIterator.next()).thenThrow(new RuntimeException("Stream Broken"));
+        when(mockResponseStream.iterator()).thenReturn(mockIterator);
+
+        ChatMessage aiMessage = new ChatMessage();
+        when(chatMessageService.getMessageById(anyString())).thenReturn(Optional.of(aiMessage));
+
+        chatService.processChatStreamWithPersonality(
+                null, testUserMessage, testChatroomId, "default", "aiMsg123" // null file 走純文字路徑
+        );
+
+        Thread.sleep(200);
+
+        verify(chatMessageService).updateMessage(argThat(msg ->
+                msg.getContent().contains("AI處理錯誤") && msg.getContent().contains("Stream Broken")
+        ));
+    }
+
+    @Test
+    void testDbUpdateFailure() throws Exception {
+        when(chatMessageService.getMessageById(anyString())).thenReturn(Optional.of(new ChatMessage()));
+        when(chatMessageService.updateMessage(any())).thenThrow(new RuntimeException("DB Error"));
+
+        chatService.processChatStreamWithPersonality(
+                null, testUserMessage, testChatroomId, "default", "aiMsg123"
+        );
+
+        Thread.sleep(200);
+
+        verify(chatMessageService).updateMessage(any());
+    }
+
+    @Test
+    void testNoImageFlow() throws Exception {
+        chatService.processChatStreamWithPersonality(
+                null, testUserMessage, testChatroomId, "default", "aiMsg123"
+        );
+
         Thread.sleep(500);
 
-        // Verify interactions
-        verify(chatMessageService).getMessagesByChatroomId(TEST_CHATROOM_ID);
-        verify(emotionPredictionChatService).processChat(TEST_USER_MESSAGE);
-        verify(registry, timeout(1000)).getSession(TEST_CHATROOM_ID);
-        verify(chatMessageService, timeout(1000)).getMessageById(TEST_AI_MESSAGE_ID);
-        verify(chatMessageService, timeout(1000)).updateMessage(mockAiMessage);
+        verify(mockChat).sendMessageStream(anyString());
     }
 
     @Test
-    void testProcessChatStreamWithPersonality_Success() throws IOException, InterruptedException {
-        // Arrange
-        List<ChatMessage> mockChatHistory = createMockChatHistory();
-        String mockEmotionPrediction = "正面情緒";
-        ChatMessage mockAiMessage = new ChatMessage();
-        mockAiMessage.setContent("");
+    void testNullAiMessageId() throws Exception {
+        chatService.processChatStreamWithPersonality(
+                null, testUserMessage, testChatroomId, "default", null
+        );
 
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(mockChatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn(mockEmotionPrediction);
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(registry.getSession(TEST_CHATROOM_ID, TEST_PERSONALITY)).thenReturn(chatSession);
+        Thread.sleep(200);
 
-        setupMockResponseStream("Hello", " World");
-        when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-        // Act
-        SseEmitter result = chatService.processChatStreamWithPersonality(
-                mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_PERSONALITY, TEST_AI_MESSAGE_ID);
-
-        // Assert
-        assertNotNull(result);
-        Thread.sleep(500);
-
-        verify(registry, timeout(1000)).getSession(TEST_CHATROOM_ID, TEST_PERSONALITY);
-        verify(chatMessageService, timeout(1000)).updateMessage(mockAiMessage);
-    }
-
-    @Test
-    void testProcessChatStreamWithPersonality_DefaultPersonality() throws IOException, InterruptedException {
-        // Arrange
-        ChatMessage mockAiMessage = new ChatMessage();
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(Collections.emptyList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn("中性");
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-
-        setupMockResponseStream("Default", " response");
-        when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-        // Act
-        SseEmitter result = chatService.processChatStreamWithPersonality(
-                mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, "default", TEST_AI_MESSAGE_ID);
-
-        // Assert
-        assertNotNull(result);
-        Thread.sleep(500);
-
-        // Should use default session (without personality parameter)
-        verify(registry, timeout(1000)).getSession(TEST_CHATROOM_ID);
-        verify(registry, never()).getSession(eq(TEST_CHATROOM_ID), anyString());
-    }
-
-    @Test
-    void testProcessChatStream_EmotionPredictionFails() throws IOException, InterruptedException {
-        // Arrange
-        List<ChatMessage> mockChatHistory = createMockChatHistory();
-        ChatMessage mockAiMessage = new ChatMessage();
-        mockAiMessage.setContent("");
-
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(mockChatHistory);
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenThrow(new RuntimeException("情緒預測失敗"));
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-
-        setupMockResponseStream("處理", "完成");
-        when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-        // Act
-        SseEmitter result = chatService.processChatStream(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_AI_MESSAGE_ID);
-
-        // Assert
-        assertNotNull(result);
-        Thread.sleep(500);
-
-        // Should still proceed with stream processing despite emotion prediction failure
-        verify(registry, timeout(1000)).getSession(TEST_CHATROOM_ID);
-        verify(chatSession, timeout(1000)).sendMessageStream(TEST_USER_MESSAGE);
-    }
-
-    @Test
-    void testProcessChatStream_StreamError() throws IOException, InterruptedException {
-        // Arrange
-        ChatMessage mockAiMessage = new ChatMessage();
-        mockAiMessage.setContent("");
-
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(Collections.emptyList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn("正面情緒");
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-
-        // Mock stream to throw exception
-        when(chatSession.sendMessageStream(anyString()))
-                .thenThrow(new RuntimeException("串流處理錯誤"));
-
-        // Act
-        SseEmitter result = chatService.processChatStream(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_AI_MESSAGE_ID);
-
-        // Assert
-        assertNotNull(result);
-        Thread.sleep(500);
-
-        // Verify error message is updated to database
-        verify(chatMessageService, timeout(1000)).updateMessage(argThat(message ->
-                message.getContent().contains("AI處理錯誤")));
-    }
-
-    @Test
-    void testProcessChatStream_EmotionPredictionServiceNull() throws IOException, InterruptedException {
-        // Arrange
-        ReflectionTestUtils.setField(chatService, "emotionPredictionChatService", null);
-
-        ChatMessage mockAiMessage = new ChatMessage();
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(Collections.emptyList());
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-
-        setupMockResponseStream("No", " emotion");
-        when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-        // Act
-        SseEmitter result = chatService.processChatStream(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_AI_MESSAGE_ID);
-
-        // Assert
-        assertNotNull(result);
-        Thread.sleep(500);
-
-        // Should proceed without emotion prediction
-        verify(registry, timeout(1000)).getSession(TEST_CHATROOM_ID);
-        verify(chatSession, timeout(1000)).sendMessageStream(TEST_USER_MESSAGE);
-    }
-
-    @Test
-    void testProcessChatStream_ImageProcessingFails() throws IOException, InterruptedException {
-        // Arrange
-        ChatMessage mockAiMessage = new ChatMessage();
-        when(chatMessageService.getMessageById(TEST_AI_MESSAGE_ID))
-                .thenReturn(Optional.of(mockAiMessage));
-        when(chatMessageService.getMessagesByChatroomId(TEST_CHATROOM_ID))
-                .thenReturn(Collections.emptyList());
-        when(emotionPredictionChatService.processChat(TEST_USER_MESSAGE))
-                .thenReturn("正面");
-        when(registry.getSession(TEST_CHATROOM_ID)).thenReturn(chatSession);
-        when(mockFile.isEmpty()).thenReturn(false);
-
-        setupMockResponseStream("Text", " only");
-
-        try (MockedStatic<ChatInputProcessor> mockedProcessor = Mockito.mockStatic(ChatInputProcessor.class)) {
-            mockedProcessor.when(() -> ChatInputProcessor.processImage(mockFile))
-                    .thenThrow(new RuntimeException("圖片處理失敗"));
-            when(chatSession.sendMessageStream(anyString())).thenReturn(responseStream);
-
-            // Act
-            SseEmitter result = chatService.processChatStream(mockFile, TEST_USER_MESSAGE, TEST_CHATROOM_ID, TEST_AI_MESSAGE_ID);
-
-            // Assert
-            assertNotNull(result);
-            Thread.sleep(500);
-
-            // Should proceed with text-only processing when image processing fails
-            verify(chatSession, timeout(1000)).sendMessageStream(anyString());
-        }
-    }
-
-    private void setupMockResponseStream(String... tokens) {
-        Iterator<GenerateContentResponse> iterator = Arrays.stream(tokens)
-                .map(token -> {
-                    GenerateContentResponse response = mock(GenerateContentResponse.class);
-                    try (MockedStatic<com.google.cloud.vertexai.generativeai.ResponseHandler> mockedHandler =
-                                 Mockito.mockStatic(com.google.cloud.vertexai.generativeai.ResponseHandler.class)) {
-                        mockedHandler.when(() -> com.google.cloud.vertexai.generativeai.ResponseHandler.getText(response))
-                                .thenReturn(token);
-                    }
-                    return response;
-                })
-                .iterator();
-
-        when(responseStream.iterator()).thenReturn(iterator);
-    }
-
-    private List<ChatMessage> createMockChatHistory() {
-        ChatMessage userMsg = new ChatMessage();
-        userMsg.setContent("用戶訊息");
-        userMsg.setIsUser(true);
-
-        ChatMessage aiMsg = new ChatMessage();
-        aiMsg.setContent("AI 回應");
-        aiMsg.setIsUser(false);
-
-        return Arrays.asList(userMsg, aiMsg);
+        verify(chatMessageService, never()).getMessageById(any());
     }
 }

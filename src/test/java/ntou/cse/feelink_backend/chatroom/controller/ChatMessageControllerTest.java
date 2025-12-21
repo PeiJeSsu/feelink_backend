@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ntou.cse.feelink_backend.chatroom.dto.ChatMessageDTO;
 import ntou.cse.feelink_backend.chatroom.model.ChatMessage;
 import ntou.cse.feelink_backend.chatroom.service.ChatMessageService;
+import ntou.cse.feelink_backend.chatroom.service.EmotionAnalysisService;
+import ntou.cse.feelink_backend.chatroom.service.GoogleNaturalLanguageService;
 import ntou.cse.feelink_backend.chatroom.util.MapperUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,11 @@ class ChatMessageControllerTest {
 
     @Mock
     private ChatMessageService chatMessageService;
+    @Mock
+    private EmotionAnalysisService emotionAnalysisService;
 
+    @Mock
+    private GoogleNaturalLanguageService googleNaturalLanguageService;
     @InjectMocks
     private ChatMessageController chatMessageController;
 
@@ -47,7 +53,6 @@ class ChatMessageControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(chatMessageController).build();
         objectMapper = new ObjectMapper();
 
-        // 初始化測試數據
         userTextMessage = createChatMessage("msg1", "chatroom1", "Hello", true, false);
         aiTextMessage = createChatMessage("msg2", "chatroom1", "Hi there!", false, false);
         userDrawingMessage = createChatMessage("msg3", "chatroom1", "drawing-data", true, true);
@@ -66,7 +71,6 @@ class ChatMessageControllerTest {
         return message;
     }
 
-    // ===== GET 所有訊息 =====
     @Test
     void testGetAllMessages_Success() throws Exception {
         List<ChatMessage> messages = Arrays.asList(userTextMessage, aiTextMessage);
@@ -89,7 +93,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // ===== GET 單一訊息 =====
     @Test
     void testGetMessageById_Found() throws Exception {
         when(chatMessageService.getMessageById("msg1")).thenReturn(Optional.of(userTextMessage));
@@ -108,7 +111,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ===== GET 聊天室所有訊息 =====
     @Test
     void testGetMessagesByChatroomId_Success() throws Exception {
         List<ChatMessage> messages = Arrays.asList(userTextMessage, aiTextMessage, userDrawingMessage);
@@ -119,7 +121,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$.length()").value(3));
     }
 
-    // ===== GET 使用者訊息 =====
     @Test
     void testGetUserMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, aiTextMessage, userDrawingMessage);
@@ -132,7 +133,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[1].isUser").value(true));
     }
 
-    // ===== GET AI訊息 =====
     @Test
     void testGetAIMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, aiTextMessage, aiDrawingMessage);
@@ -145,7 +145,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[1].isUser").value(false));
     }
 
-    // ===== GET 文字訊息 =====
     @Test
     void testGetTextMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, aiTextMessage, userDrawingMessage);
@@ -158,7 +157,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[1].isDrawingData").value(false));
     }
 
-    // ===== GET 畫布訊息 =====
     @Test
     void testGetDrawingMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, userDrawingMessage, aiDrawingMessage);
@@ -171,7 +169,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[1].isDrawingData").value(true));
     }
 
-    // ===== GET 使用者畫布訊息 =====
     @Test
     void testGetUserDrawingMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, userDrawingMessage, aiDrawingMessage);
@@ -184,7 +181,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[0].isDrawingData").value(true));
     }
 
-    // ===== GET 使用者文字訊息 =====
     @Test
     void testGetUserTextMessages_Success() throws Exception {
         List<ChatMessage> allMessages = Arrays.asList(userTextMessage, userDrawingMessage, aiTextMessage);
@@ -197,7 +193,6 @@ class ChatMessageControllerTest {
                 .andExpect(jsonPath("$[0].isDrawingData").value(false));
     }
 
-    // ===== POST 創建訊息 =====
     @Test
     void testCreateMessage_Success() throws Exception {
         when(chatMessageService.createMessage(any(ChatMessage.class))).thenReturn(userTextMessage);
@@ -214,7 +209,6 @@ class ChatMessageControllerTest {
         verify(chatMessageService).createMessage(any(ChatMessage.class));
     }
 
-    // ===== PUT 更新訊息 =====
     @Test
     void testUpdateMessage_Success() throws Exception {
         ChatMessage updatedMessage = createChatMessage("msg1", "chatroom1", "Updated content", true, false);
@@ -231,7 +225,6 @@ class ChatMessageControllerTest {
         verify(chatMessageService).updateMessage(any(ChatMessage.class));
     }
 
-    // ===== DELETE 單一訊息 =====
     @Test
     void testDeleteMessage_Success() throws Exception {
         doNothing().when(chatMessageService).deleteMessage("msg1");
@@ -242,7 +235,6 @@ class ChatMessageControllerTest {
         verify(chatMessageService).deleteMessage("msg1");
     }
 
-    // ===== DELETE 聊天室所有訊息 =====
     @Test
     void testDeleteAllMessagesInChatroom_Success() throws Exception {
         when(chatMessageService.deleteAllMessagesByChatroomId("chatroom1")).thenReturn(5);
@@ -262,7 +254,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== DELETE 使用者訊息 =====
     @Test
     void testDeleteUserMessagesInChatroom_Success() throws Exception {
         when(chatMessageService.deleteUserMessagesByChatroomId("chatroom1")).thenReturn(3);
@@ -282,7 +273,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== DELETE AI訊息 =====
     @Test
     void testDeleteAIMessagesInChatroom_Success() throws Exception {
         when(chatMessageService.deleteAIMessagesByChatroomId("chatroom1")).thenReturn(2);
@@ -302,7 +292,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== DELETE 文字訊息 =====
     @Test
     void testDeleteTextMessagesInChatroom_Success() throws Exception {
         when(chatMessageService.deleteTextMessagesByChatroomId("chatroom1")).thenReturn(4);
@@ -322,7 +311,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== DELETE 畫布訊息 =====
     @Test
     void testDeleteDrawingMessagesInChatroom_Success() throws Exception {
         when(chatMessageService.deleteDrawingMessagesByChatroomId("chatroom1")).thenReturn(1);
@@ -342,7 +330,6 @@ class ChatMessageControllerTest {
                 .andExpect(status().isInternalServerError());
     }
 
-    // ===== 邊界情況測試 =====
     @Test
     void testGetMessagesWithEmptyResult() throws Exception {
         when(chatMessageService.getMessagesByChatroomId("empty-chatroom"))
@@ -361,5 +348,135 @@ class ChatMessageControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(chatMessageService).deleteAllMessagesByChatroomId("empty-chatroom");
+    }
+    @Test
+    void testGetUserTextMessageCount_Success() throws Exception {
+        List<ChatMessage> messages = Arrays.asList(userTextMessage, userDrawingMessage, aiTextMessage);
+        when(chatMessageService.getMessagesByChatroomId("chatroom1")).thenReturn(messages);
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/user/text/count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(1));
+    }
+
+    @Test
+    void testGetUserTextMessageCountToday_Success() throws Exception {
+        when(chatMessageService.countUserTextMessagesToday("chatroom1")).thenReturn(5);
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/user/today/text/count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(5));
+    }
+
+    @Test
+    void testGetUserTextMessageCountToday_Exception() throws Exception {
+        when(chatMessageService.countUserTextMessagesToday("chatroom1"))
+                .thenThrow(new RuntimeException("DB error"));
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/user/today/text/count"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.count").value(0));
+    }
+
+    @Test
+    void testGetTodayEmotionAnalysis_Success() throws Exception {
+        EmotionAnalysisService.EmotionScores scores = new EmotionAnalysisService.EmotionScores(0.5, 0.5, 0.1, 0.1, 0.0, 0.0,0.0,0.0);
+        when(emotionAnalysisService.analyzeTodayEmotions("chatroom1")).thenReturn(scores);
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/emotion/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.joy").value(0.5));
+    }
+
+    @Test
+    void testGetTodayEmotionAnalysis_Exception() throws Exception {
+        when(emotionAnalysisService.analyzeTodayEmotions("chatroom1"))
+                .thenThrow(new RuntimeException("Analysis error"));
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/emotion/today"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testGetTodayChatSummary_Success() throws Exception {
+        when(emotionAnalysisService.generateTodayChatSummary("chatroom1")).thenReturn("Summary text");
+        when(emotionAnalysisService.getTaiwanTodayString()).thenReturn("2023-10-27");
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/summary/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary").value("Summary text"))
+                .andExpect(jsonPath("$.date").value("2023-10-27"));
+    }
+
+    @Test
+    void testGetTodayChatSummary_Exception() throws Exception {
+        when(emotionAnalysisService.generateTodayChatSummary("chatroom1"))
+                .thenThrow(new RuntimeException("Summary error"));
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/summary/today"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testGetTodaySimpleDemand_Success() throws Exception {
+        when(emotionAnalysisService.analyzeTodayDemandSimple("chatroom1")).thenReturn("Support");
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/demands/today"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Support"));
+    }
+
+    @Test
+    void testGetTodaySimpleDemand_Exception() throws Exception {
+        when(emotionAnalysisService.analyzeTodayDemandSimple("chatroom1"))
+                .thenThrow(new RuntimeException("Demand error"));
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/demands/today"))
+                .andExpect(status().isOk());
+    }
+    @Test
+    void testGetTodaySentiment_Success() throws Exception {
+        GoogleNaturalLanguageService.SimpleSentimentResult result =
+                new GoogleNaturalLanguageService.SimpleSentimentResult(0.8f, 0.9f);
+        when(googleNaturalLanguageService.analyzeTodaySentiment("chatroom1")).thenReturn(result);
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/score/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.score").value(0.8))
+                .andExpect(jsonPath("$.magnitude").value(0.9));
+    }
+
+    @Test
+    void testGetTodaySentiment_Exception() throws Exception {
+        when(googleNaturalLanguageService.analyzeTodaySentiment("chatroom1"))
+                .thenThrow(new RuntimeException("Sentiment error"));
+
+        mockMvc.perform(get("/api/messages/chatroom/chatroom1/score/today"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.score").value(0.0))
+                .andExpect(jsonPath("$.magnitude").value(0.0));
+    }
+
+    @Test
+    void testSavePreQuestionForChatroom_Success() throws Exception {
+        String preQuestion = "How are you?";
+        ChatMessage savedMessage = createChatMessage("msg5", "chatroom1", preQuestion, true, false);
+        when(chatMessageService.savePreQuestionForNewChatroom("chatroom1", preQuestion))
+                .thenReturn(savedMessage);
+
+        mockMvc.perform(post("/api/messages/chatroom/chatroom1/prequestion")
+                        .content(preQuestion))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").value(preQuestion));
+    }
+
+    @Test
+    void testSavePreQuestionForChatroom_Exception() throws Exception {
+        when(chatMessageService.savePreQuestionForNewChatroom(anyString(), anyString()))
+                .thenThrow(new RuntimeException("Save error"));
+
+        mockMvc.perform(post("/api/messages/chatroom/chatroom1/prequestion")
+                        .content("test"))
+                .andExpect(status().isInternalServerError());
     }
 }

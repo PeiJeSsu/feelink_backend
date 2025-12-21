@@ -32,7 +32,6 @@
     <sonar.organization>ntou-cse-115</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-    <maven.test.skip>true</maven.test.skip>
   </properties>
   <dependencyManagement>
     <dependencies>
