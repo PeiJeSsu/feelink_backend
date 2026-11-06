@@ -14,7 +14,7 @@ Spring Boot backend for **[FeelInk 超繪聊](https://github.com/PeiJeSsu/feelin
 - **Three AI personalities**: warm, curious, and creative, each with its own prompt
 - **Crisis-aware responses**: a 5-level risk rubric decides when to offer hotlines
 - **Real resources**: finds real counseling services via web search (SerpAPI)
-- **Canvas analysis**: the AI reads colors, subjects, and composition of a drawing
+- **Canvas analysis**: sends a drawing to Gemini and streams back its analysis
 - **AI drawing**: generates objects with Gemini, background removed by remove.bg
 - **Daily emotion report**: scores eight emotions and infers the user's needs
 - **Persistence**: chats, canvases, and reports are stored in MongoDB
